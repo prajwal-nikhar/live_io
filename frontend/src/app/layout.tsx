@@ -2,9 +2,14 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Enterprise Quiz Platform",
-  description: "High-Performance, Real-Time Kahoot Alternative",
+  title: "AuraQuiz — Real-Time Live Quiz Platform",
+  description: "High-Performance, Real-Time Enterprise Engagement Platform",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
