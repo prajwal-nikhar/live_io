@@ -76,8 +76,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         name: player.name,
         socketId: client.id,
       });
-      const players = await this.roomService.getPlayers(pin);
-      this.server.to(`room:${pin}`).emit('lobby_update', players);
+      this.scheduleLobbyUpdate(pin);
     }
   }
 
@@ -113,15 +112,47 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // PLAYER: Join Room (Supports Acknowledgement Callback)
+  private parsePayload(data: any): any {
+    if (!data) return {};
+    if (typeof data === 'string') {
+      try {
+        return JSON.parse(data);
+      } catch {
+        return {};
+      }
+    }
+    return data;
+  }
+
+  private lobbyDebounceTimers = new Map<string, NodeJS.Timeout>();
+
+  private scheduleLobbyUpdate(pin: string) {
+    if (this.lobbyDebounceTimers.has(pin)) return;
+
+    const timer = setTimeout(async () => {
+      this.lobbyDebounceTimers.delete(pin);
+      try {
+        const players = await this.roomService.getPlayers(pin);
+        this.server.to(`room:${pin}`).emit('lobby_update', players);
+      } catch (err: any) {
+        this.logger.error(`[Lobby Update Broadcast Error] PIN ${pin}: ${err.message}`);
+      }
+    }, 250);
+
+    this.lobbyDebounceTimers.set(pin, timer);
+  }
+
+  // PLAYER: Join Room (Supports Acknowledgement Callback & Canonical player:join)
   @SubscribeMessage('player:join')
   @SubscribeMessage('player_join')
-  async handlePlayerJoin(
-    @MessageBody() data: { pin: string; name: string },
+  async handleJoinRoom(
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, name } = data;
+      const payload = this.parsePayload(data);
+      const pin = payload.pin;
+      const name = payload.name;
       this.logger.log(`[Join Requested] Player '${name}' requesting join for PIN ${pin}`);
 
       const player = await this.roomService.joinPlayer(pin, name, client.id);
@@ -141,14 +172,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('player:joined', responsePayload);
       client.emit('join_success', responsePayload);
 
-      // Broadcast updated lobby list to room
-      const players = await this.roomService.getPlayers(pin);
-      this.server.to(`room:${pin}`).emit('lobby_update', players);
+      // Debounced lobby update to support 600+ concurrent joins cleanly
+      this.scheduleLobbyUpdate(pin);
 
       this.logger.log(`[Join Success] Player '${name}' (${player.id}) joined PIN ${pin}`);
       return { success: true, data: responsePayload };
     } catch (error: any) {
-      this.logger.warn(`[Join Failed] Player '${data?.name}' PIN ${data?.pin}: ${error.message}`);
+      const payload = this.parsePayload(data);
+      this.logger.warn(`[Join Failed] Player '${payload?.name}' PIN '${payload?.pin}': ${error.message}`);
       client.emit('error', { message: error.message || 'Failed to join room' });
       return { success: false, message: error.message || 'Failed to join room' };
     }
@@ -157,11 +188,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // PLAYER: Dedicated Reconnect Handler (Supports Acknowledgement Callback)
   @SubscribeMessage('player:reconnect')
   async handlePlayerReconnect(
-    @MessageBody() data: { pin: string; playerId: string; reconnectToken: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, playerId, reconnectToken } = data;
+      const payload = this.parsePayload(data);
+      const { pin, playerId, reconnectToken } = payload;
       this.logger.log(`[Reconnect Requested] Player ${playerId} for PIN ${pin}`);
 
       const { player, syncState } = await this.roomService.reconnectPlayer(
@@ -193,7 +225,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.log(`[Reconnect Success] Player '${player.name}' restored for PIN ${pin}`);
       return { success: true, data: responsePayload };
     } catch (error: any) {
-      this.logger.warn(`[Reconnect Failed] PIN ${data?.pin}: ${error.message}`);
+      const payload = this.parsePayload(data);
+      this.logger.warn(`[Reconnect Failed] PIN ${payload?.pin}: ${error.message}`);
       client.emit('reconnect:failed', { message: error.message });
       return { success: false, message: error.message || 'Failed to reconnect' };
     }
@@ -202,11 +235,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // PLAYER: Explicit State Synchronization (Supports Acknowledgement Callback)
   @SubscribeMessage('player:sync')
   async handlePlayerSync(
-    @MessageBody() data: { pin: string; playerId?: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const syncState = await this.roomService.getSyncState(data.pin, data.playerId);
+      const payload = this.parsePayload(data);
+      const syncState = await this.roomService.getSyncState(payload.pin, payload.playerId);
       if (syncState) {
         client.emit('session:sync', syncState);
         return { success: true, data: syncState };
@@ -222,18 +256,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('host_start_quiz')
   @SubscribeMessage('host_start_game')
   async handleStartQuiz(
-    @MessageBody() data: { pin: string; hostId?: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const pin = data.pin;
-      const hostId = data.hostId || client.data.user?.id;
+      const payload = this.parsePayload(data);
+      const pin = payload.pin;
+      const hostId = payload.hostId || client.data.user?.id;
       this.logger.log(`[Host Action] Start quiz for PIN ${pin} (Host: ${hostId || 'anonymous'})`);
 
       const { question, remainingSeconds } = await this.roomService.startQuiz(pin, hostId);
       const syncState = await this.roomService.getSyncState(pin);
 
-      const payload = {
+      const responsePayload = {
         question,
         remainingSeconds,
         questionIndex: 0,
@@ -241,8 +276,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
 
       // Broadcast canonical and legacy events to room
-      this.server.to(`room:${pin}`).emit('question:start', payload);
-      this.server.to(`room:${pin}`).emit('quiz_started', payload);
+      this.server.to(`room:${pin}`).emit('question:start', responsePayload);
+      this.server.to(`room:${pin}`).emit('quiz_started', responsePayload);
       this.server.to(`room:${pin}`).emit('session:sync', syncState);
 
       this.logger.log(`[Participants Acknowledged] Broadcasted question:start to room:${pin}`);
@@ -250,7 +285,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       return { success: true, data: { question, remainingSeconds, syncState } };
     } catch (error: any) {
-      this.logger.error(`[Start Quiz Failed] PIN ${data?.pin}: ${error.message}`);
+      const payload = this.parsePayload(data);
+      this.logger.error(`[Start Quiz Failed] PIN ${payload?.pin}: ${error.message}`);
       client.emit('error', { message: error.message || 'Failed to start quiz' });
       return { success: false, message: error.message || 'Failed to start quiz' };
     }
@@ -260,11 +296,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('host:skip')
   @SubscribeMessage('host_skip_question')
   async handleSkipQuestion(
-    @MessageBody() data: { pin: string; hostId: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, hostId } = data;
+      const payload = this.parsePayload(data);
+      const { pin, hostId } = payload;
       this.logger.log(`[Host Action] Skip question for PIN ${pin}`);
 
       const { stats } = await this.roomService.skipQuestion(pin, hostId);
@@ -288,11 +325,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('host:showAnswer')
   @SubscribeMessage('host_show_answer')
   async handleShowAnswer(
-    @MessageBody() data: { pin: string; hostId: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, hostId } = data;
+      const payload = this.parsePayload(data);
+      const { pin, hostId } = payload;
       this.logger.log(`[Host Action] Show answer for PIN ${pin}`);
 
       const { stats, leaderboard } = await this.roomService.showAnswer(pin, hostId);
@@ -322,11 +360,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('host:showLeaderboard')
   @SubscribeMessage('host_show_leaderboard')
   async handleShowLeaderboard(
-    @MessageBody() data: { pin: string; hostId: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, hostId } = data;
+      const payload = this.parsePayload(data);
+      const { pin, hostId } = payload;
       const { leaderboard } = await this.roomService.showLeaderboard(pin, hostId);
       const syncState = await this.roomService.getSyncState(pin);
 
@@ -344,11 +383,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('host:next')
   @SubscribeMessage('host_next_question')
   async handleNextQuestion(
-    @MessageBody() data: { pin: string; hostId: string },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, hostId } = data;
+      const payload = this.parsePayload(data);
+      const { pin, hostId } = payload;
       const result = await this.roomService.nextQuestion(pin, hostId);
 
       if (result.finished) {
@@ -391,18 +431,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('player:answer')
   @SubscribeMessage('player_submit_answer')
   async handleSubmitAnswer(
-    @MessageBody()
-    data: {
-      pin: string;
-      playerId: string;
-      questionId: string;
-      optionId: string;
-      textResponse?: string;
-    },
+    @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, playerId, questionId, optionId, textResponse } = data;
+      const payload = this.parsePayload(data);
+      const { pin, playerId, questionId, optionId, textResponse } = payload;
       this.logger.log(`[Answer Submission] Player ${playerId} question ${questionId}`);
 
       const result = await this.roomService.submitResponse(

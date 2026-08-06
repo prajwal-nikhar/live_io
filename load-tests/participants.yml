@@ -20,6 +20,8 @@ scenarios:
       - emit:
           channel: "player:join"
           data:
-            pin: "110257"
+            pin: "999999"
             name: "Player_{{ $randomString() }}"
+          response:
+            channel: "player:joined"
       - think: 60
