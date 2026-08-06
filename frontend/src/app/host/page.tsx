@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiRequest, getBackendUrl } from '@/lib/api';
-import { getSocket } from '@/lib/socket';
+import { getSocket, emitWithTimeout } from '@/lib/socket';
 import { 
   Award, Sparkles, LogOut, PlusCircle, Play, Layers, 
   Trash2, Copy, FileSpreadsheet, Bot, UploadCloud, MonitorCheck,
@@ -236,14 +236,13 @@ export default function HostDashboard() {
   };
 
   // Host/Launch live room PIN
-  const handleHostLive = (quizId: string) => {
-    const socket = getSocket();
-    socket.emit('host_create_room', { quizId, hostId: user.id });
-
-    socket.once('room_created', (data) => {
-      // Direct host to control room page
-      router.push(`/host/room/${data.pin}`);
-    });
+  const handleHostLive = async (quizId: string) => {
+    const res = await emitWithTimeout('host_create_room', { quizId, hostId: user.id }, 10000);
+    if (res.success && res.data?.pin) {
+      router.push(`/host/room/${res.data.pin}`);
+    } else {
+      alert(res.message || 'Failed to create live room');
+    }
   };
 
   const handleDeleteQuiz = async (id: string) => {

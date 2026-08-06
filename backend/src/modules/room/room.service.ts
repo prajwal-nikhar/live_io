@@ -104,7 +104,7 @@ export class RoomService {
 
     if (!session) return null;
 
-    const questions = session.quiz.questions;
+    const questions = session.quiz?.questions || [];
     const currentIdx = Math.min(session.currentQuestionIndex, questions.length - 1);
     const currentQuestion = questions[currentIdx] || null;
 

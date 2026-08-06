@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -7,7 +7,7 @@ export class AnalyticsService {
 
   async getHostDashboardSummary(hostId: string) {
     const quizzesCount = await this.prisma.quiz.count({ where: { hostId } });
-    
+
     const sessions = await this.prisma.quizSession.findMany({
       where: { hostId },
       include: {
@@ -19,24 +19,25 @@ export class AnalyticsService {
       },
     });
 
-    const activeRoomsCount = sessions.filter(s => s.status !== 'FINISHED').length;
-    const completedRoomsCount = sessions.filter(s => s.status === 'FINISHED').length;
-    
-    // Total historical players across sessions
+    const activeRoomsCount = sessions.filter((s) => s.status !== 'FINISHED').length;
+    const completedRoomsCount = sessions.filter((s) => s.status === 'FINISHED').length;
+
     const totalPlayersCount = sessions.reduce((acc, s) => acc + s.players.length, 0);
 
-    // Compute average correct response rate
     let totalResponses = 0;
     let correctResponses = 0;
 
     for (const session of sessions) {
       for (const player of session.players) {
         totalResponses += player.responses.length;
-        correctResponses += player.responses.filter(r => r.isCorrect === 'true').length;
+        correctResponses += player.responses.filter((r) => r.isCorrect === 'true').length;
       }
     }
 
-    const accuracyRate = totalResponses > 0 ? parseFloat(((correctResponses / totalResponses) * 100).toFixed(1)) : 0.0;
+    const accuracyRate =
+      totalResponses > 0
+        ? parseFloat(((correctResponses / totalResponses) * 100).toFixed(1))
+        : 0.0;
 
     return {
       quizzesCount,
@@ -44,7 +45,7 @@ export class AnalyticsService {
       completedRoomsCount,
       totalPlayersCount,
       accuracyRate,
-      recentSessions: sessions.slice(-5).map(s => ({
+      recentSessions: sessions.slice(-5).map((s) => ({
         id: s.id,
         pin: s.pin,
         status: s.status,
@@ -54,9 +55,9 @@ export class AnalyticsService {
     };
   }
 
-  async getSessionReport(sessionId: string, hostId: string) {
-    const session = await this.prisma.quizSession.findUnique({
-      where: { id: sessionId },
+  async getSessionReport(sessionIdOrPin: string, hostId: string) {
+    let session = await this.prisma.quizSession.findUnique({
+      where: { id: sessionIdOrPin },
       include: {
         quiz: {
           include: {
@@ -81,25 +82,50 @@ export class AnalyticsService {
     });
 
     if (!session) {
+      session = await this.prisma.quizSession.findUnique({
+        where: { pin: sessionIdOrPin },
+        include: {
+          quiz: {
+            include: {
+              questions: {
+                include: {
+                  options: true,
+                },
+              },
+            },
+          },
+          players: {
+            include: {
+              responses: {
+                include: {
+                  option: true,
+                },
+              },
+            },
+            orderBy: { score: 'desc' },
+          },
+        },
+      });
+    }
+
+    if (!session) {
       throw new NotFoundException('Quiz session not found');
     }
 
-    // Security check: Only host can read reports
     if (session.hostId !== hostId) {
-      throw new Error('Unauthorized report access');
+      throw new ForbiddenException('Unauthorized report access');
     }
 
     return session;
   }
 
-  // Generate exported structures for downloads
-  async exportToCsv(sessionId: string, hostId: string): Promise<string> {
-    const report = await this.getSessionReport(sessionId, hostId);
-    
+  async exportToCsv(sessionIdOrPin: string, hostId: string): Promise<string> {
+    const report = await this.getSessionReport(sessionIdOrPin, hostId);
+
     let csv = 'Rank,Player Name,Score,Streak,Connected,Correct Answers,Total Questions\n';
-    
+
     report.players.forEach((p, idx) => {
-      const correctAnswers = p.responses.filter(r => r.isCorrect === 'true').length;
+      const correctAnswers = p.responses.filter((r) => r.isCorrect === 'true').length;
       csv += `${idx + 1},"${p.name}",${p.score},${p.streak},${p.isConnected},${correctAnswers},${report.quiz.questions.length}\n`;
     });
 
