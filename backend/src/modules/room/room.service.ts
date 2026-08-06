@@ -222,18 +222,22 @@ export class RoomService {
   }
 
   async handlePlayerDisconnect(socketId: string) {
-    const player = await this.prisma.player.findFirst({
-      where: { socketId },
-      include: { session: true },
-    });
-
-    if (player) {
-      await this.prisma.player.update({
-        where: { id: player.id },
-        data: { isConnected: 'false', lastSeen: new Date() },
+    try {
+      const player = await this.prisma.player.findFirst({
+        where: { socketId },
+        select: { id: true, name: true, session: { select: { pin: true } } },
       });
-      this.logger.log(`Player ${player.name} marked disconnected from pin ${player.session.pin}`);
-      return { pin: player.session.pin, player };
+
+      if (player && player.session) {
+        await this.prisma.player.update({
+          where: { id: player.id },
+          data: { isConnected: 'false', lastSeen: new Date() },
+        });
+        this.logger.log(`Player ${player.name} marked disconnected from pin ${player.session.pin}`);
+        return { pin: player.session.pin, player };
+      }
+    } catch (err: any) {
+      this.logger.warn(`[Disconnect Handler Pool Warning] Socket ${socketId}: ${err.message}`);
     }
     return null;
   }
