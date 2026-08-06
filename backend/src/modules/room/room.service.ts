@@ -79,6 +79,7 @@ export class RoomService {
       questionEndTime: null,
     };
 
+    await this.cache.del(`room:${pin}`);
     await this.cache.set(`room:${pin}`, JSON.stringify(roomState), 14400);
     return session;
   }
@@ -238,11 +239,14 @@ export class RoomService {
   }
 
   async getPlayers(pin: string) {
-    const room = await this.getRoomState(pin);
-    if (!room) return [];
+    const session = await this.prisma.quizSession.findUnique({
+      where: { pin },
+      select: { id: true },
+    });
+    if (!session) return [];
 
     return this.prisma.player.findMany({
-      where: { sessionId: room.sessionId },
+      where: { sessionId: session.id },
       orderBy: { score: 'desc' },
     });
   }

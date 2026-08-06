@@ -28,6 +28,12 @@ export default function HostRoom() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
+    setPlayers([]);
+    setLeaderboard([]);
+    setStats(null);
+    setCurrentQuestion(null);
+    setErrorMsg(null);
+
     const socket = getSocket();
 
     async function syncHost() {
