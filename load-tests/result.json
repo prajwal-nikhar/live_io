@@ -1,0 +1,228 @@
+{
+  "aggregate": {
+    "counters": {
+      "vusers.created_by_name.Join Quiz": 18600,
+      "vusers.created": 18600,
+      "vusers.failed": 18600,
+      "errors.Error: xhr poll error": 10943,
+      "errors.Error: timeout": 1146,
+      "errors.Error: xhr post error": 2799
+    },
+    "rates": {},
+    "firstCounterAt": 1786054635854,
+    "lastCounterAt": 1786054752727,
+    "firstMetricAt": 1786054635854,
+    "lastMetricAt": 1786054752727,
+    "period": 1786054750000,
+    "summaries": {},
+    "histograms": {}
+  },
+  "intermediate": [
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 152,
+        "vusers.created": 152,
+        "vusers.failed": 117
+      },
+      "rates": {},
+      "firstCounterAt": 1786054635854,
+      "lastCounterAt": 1786054639997,
+      "firstMetricAt": 1786054635854,
+      "lastMetricAt": 1786054639997,
+      "period": "1786054630000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 738,
+        "vusers.created_by_name.Join Quiz": 1060,
+        "vusers.created": 1060
+      },
+      "rates": {},
+      "firstCounterAt": 1786054640008,
+      "lastCounterAt": 1786054649998,
+      "firstMetricAt": 1786054640008,
+      "lastMetricAt": 1786054649998,
+      "period": "1786054640000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 2044,
+        "vusers.created": 2044,
+        "vusers.failed": 562,
+        "errors.Error: xhr poll error": 18,
+        "errors.Error: xhr post error": 4
+      },
+      "rates": {},
+      "firstCounterAt": 1786054650003,
+      "lastCounterAt": 1786054659996,
+      "firstMetricAt": 1786054650003,
+      "lastMetricAt": 1786054659996,
+      "period": "1786054650000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 3027,
+        "vusers.created": 3027,
+        "vusers.failed": 390,
+        "errors.Error: xhr poll error": 40,
+        "errors.Error: xhr post error": 6,
+        "errors.Error: timeout": 38
+      },
+      "rates": {},
+      "firstCounterAt": 1786054660002,
+      "lastCounterAt": 1786054669998,
+      "firstMetricAt": 1786054660002,
+      "lastMetricAt": 1786054669998,
+      "period": "1786054660000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 4008,
+        "vusers.created": 4008,
+        "vusers.failed": 4521,
+        "errors.Error: timeout": 463,
+        "errors.Error: xhr post error": 953,
+        "errors.Error: xhr poll error": 2793
+      },
+      "rates": {},
+      "firstCounterAt": 1786054670001,
+      "lastCounterAt": 1786054679997,
+      "firstMetricAt": 1786054670001,
+      "lastMetricAt": 1786054679997,
+      "period": "1786054670000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "errors.Error: xhr poll error": 3880,
+        "vusers.failed": 5388,
+        "vusers.created_by_name.Join Quiz": 4989,
+        "vusers.created": 4989,
+        "errors.Error: timeout": 317,
+        "errors.Error: xhr post error": 969
+      },
+      "rates": {},
+      "firstCounterAt": 1786054680000,
+      "lastCounterAt": 1786054689999,
+      "firstMetricAt": 1786054680000,
+      "lastMetricAt": 1786054689999,
+      "period": "1786054680000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 3320,
+        "vusers.created": 3320,
+        "errors.Error: xhr post error": 740,
+        "vusers.failed": 4507,
+        "errors.Error: xhr poll error": 3229,
+        "errors.Error: timeout": 123
+      },
+      "rates": {},
+      "firstCounterAt": 1786054690000,
+      "lastCounterAt": 1786054699986,
+      "firstMetricAt": 1786054690000,
+      "lastMetricAt": 1786054699986,
+      "period": "1786054690000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 1789,
+        "errors.Error: xhr poll error": 935,
+        "errors.Error: xhr post error": 117,
+        "errors.Error: timeout": 143
+      },
+      "rates": {},
+      "firstCounterAt": 1786054700016,
+      "lastCounterAt": 1786054709997,
+      "firstMetricAt": 1786054700016,
+      "lastMetricAt": 1786054709997,
+      "period": "1786054700000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "errors.Error: xhr post error": 8,
+        "vusers.failed": 463,
+        "errors.Error: xhr poll error": 46,
+        "errors.Error: timeout": 52
+      },
+      "rates": {},
+      "firstCounterAt": 1786054710057,
+      "lastCounterAt": 1786054719995,
+      "firstMetricAt": 1786054710057,
+      "lastMetricAt": 1786054719995,
+      "period": "1786054710000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 76,
+        "errors.Error: timeout": 10,
+        "errors.Error: xhr post error": 2,
+        "errors.Error: xhr poll error": 2
+      },
+      "rates": {},
+      "firstCounterAt": 1786054720001,
+      "lastCounterAt": 1786054729838,
+      "firstMetricAt": 1786054720001,
+      "lastMetricAt": 1786054729838,
+      "period": "1786054720000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 21
+      },
+      "rates": {},
+      "firstCounterAt": 1786054730559,
+      "lastCounterAt": 1786054739791,
+      "firstMetricAt": 1786054730559,
+      "lastMetricAt": 1786054739791,
+      "period": "1786054730000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 23
+      },
+      "rates": {},
+      "firstCounterAt": 1786054740728,
+      "lastCounterAt": 1786054749644,
+      "firstMetricAt": 1786054740728,
+      "lastMetricAt": 1786054749644,
+      "period": "1786054740000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 5
+      },
+      "rates": {},
+      "firstCounterAt": 1786054751076,
+      "lastCounterAt": 1786054752727,
+      "firstMetricAt": 1786054751076,
+      "lastMetricAt": 1786054752727,
+      "period": "1786054750000",
+      "summaries": {},
+      "histograms": {}
+    }
+  ]
+}

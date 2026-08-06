@@ -1,0 +1,30 @@
+config:
+  target: "https://empowering-laughter-production.up.railway.app"
+
+  phases:
+    - duration: 120
+      arrivalRate: 100
+
+  engines:
+    socketio: {}
+
+scenarios:
+
+  - engine: socketio
+
+    flow:
+
+      - connect: {}
+
+      - think: 5
+
+      - disconnect: {}
+
+      - think: 2
+
+      - connect: {}
+
+      - emit:
+          channel: "player:reconnect"
+
+      - think: 10

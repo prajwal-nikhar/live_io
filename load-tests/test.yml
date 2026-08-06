@@ -1,0 +1,44 @@
+config:
+  target: "http://localhost:4000"
+  socketio:
+    transports:
+      - "websocket"
+    path: "/socket.io"
+
+  phases:
+    - duration: 20
+      arrivalRate: 10
+      name: Warm up (10/s)
+
+    - duration: 30
+      arrivalRate: 20
+      name: Ramp (20/s)
+
+engines:
+  socketio: {}
+
+scenarios:
+  - name: Join Quiz
+    engine: socketio
+    flow:
+      - connect: {}
+      - think: 1
+      - emit:
+          channel: "player:join"
+          data:
+            pin: "110257"
+            name: "Player_{{ $randomString() }}"
+      - think: 3
+      - emit:
+          channel: "player:sync"
+          data:
+            pin: "110257"
+      - think: 2
+      - emit:
+          channel: "player:answer"
+          data:
+            pin: "110257"
+            questionId: "q-1"
+            optionId: "opt-1"
+      - think: 5
+      - disconnect: {}

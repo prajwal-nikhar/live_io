@@ -24,6 +24,15 @@ export interface AckResult<T = any> {
   cors: {
     origin: '*',
   },
+  transports: ['websocket', 'polling'],
+  pingInterval: 10000,
+  pingTimeout: 10000,
+  maxHttpBufferSize: 1e6,
+  allowEIO3: true,
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: true,
+  },
 })
 export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()

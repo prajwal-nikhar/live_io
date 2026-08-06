@@ -1,0 +1,24 @@
+config:
+  target: "https://empowering-laughter-production.up.railway.app"
+
+  phases:
+    - duration: 30
+      arrivalRate: 600
+
+  engines:
+    socketio: {}
+
+scenarios:
+
+  - engine: socketio
+
+    flow:
+
+      - connect: {}
+
+      - emit:
+          channel: "player_submit_answer"
+          data:
+            optionId: "1"
+
+      - think: 2

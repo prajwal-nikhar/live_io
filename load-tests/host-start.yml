@@ -1,0 +1,19 @@
+config:
+  target: "https://empowering-laughter-production.up.railway.app"
+
+  engines:
+    socketio: {}
+
+scenarios:
+  - engine: socketio
+
+    flow:
+
+      - connect: {}
+
+      - emit:
+          channel: "host_start_quiz"
+          data:
+            pin: "110257"
+
+      - think: 5

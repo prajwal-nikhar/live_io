@@ -1,0 +1,25 @@
+config:
+  target: "http://localhost:4000"
+  socketio:
+    transports:
+      - "websocket"
+    path: "/socket.io"
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: Sustain 600 Concurrent Players (60s)
+
+engines:
+  socketio: {}
+
+scenarios:
+  - name: Join Quiz
+    engine: socketio
+    flow:
+      - connect: {}
+      - emit:
+          channel: "player:join"
+          data:
+            pin: "110257"
+            name: "Player_{{ $randomString() }}"
+      - think: 60
