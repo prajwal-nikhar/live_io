@@ -1,4 +1,5 @@
 # Stage 1: Build dependencies and app
+ARG CACHE_BUST=2
 FROM node:20-bookworm-slim AS builder
 
 RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*

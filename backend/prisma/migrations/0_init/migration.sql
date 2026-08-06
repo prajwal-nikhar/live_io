@@ -5,8 +5,15 @@ CREATE TABLE "User" (
     "passwordHash" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'PARTICIPANT',
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+    "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "lastLogin" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "deletedAt" TIMESTAMP(3),
+    "refreshTokenHash" TEXT,
+    "resetTokenHash" TEXT,
+    "resetTokenExpires" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -100,6 +107,10 @@ CREATE TABLE "Response" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE INDEX "User_email_idx" ON "User"("email");
+CREATE INDEX "User_role_idx" ON "User"("role");
+CREATE INDEX "User_isActive_idx" ON "User"("isActive");
+CREATE INDEX "User_deletedAt_idx" ON "User"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "Quiz_hostId_idx" ON "Quiz"("hostId");

@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'super-secret-jwt-key',
+      secretOrKey: process.env.JWT_SECRET || 'cognition-super-secret-jwt-key-2026',
     });
   }
 
@@ -17,9 +17,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
     });
-    if (!user) {
-      throw new UnauthorizedException('User not found or session expired');
+
+    if (!user || user.deletedAt) {
+      throw new UnauthorizedException('User account does not exist or has been deleted');
     }
-    return { id: user.id, email: user.email, name: user.name, role: user.role };
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('User account is deactivated');
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      isActive: user.isActive,
+    };
   }
 }

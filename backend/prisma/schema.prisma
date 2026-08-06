@@ -9,15 +9,27 @@ generator client {
 }
 
 model User {
-  id           String        @id @default(uuid())
-  email        String        @unique
-  passwordHash String
-  name         String
-  role         String        @default("PARTICIPANT") // ADMIN, HOST, PARTICIPANT, MODERATOR
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  quizzes      Quiz[]        @relation("HostQuizzes")
-  sessions     QuizSession[] @relation("HostSessions")
+  id                String        @id @default(uuid())
+  email             String        @unique
+  passwordHash      String
+  name              String
+  role              String        @default("PARTICIPANT") // SUPER_ADMIN, ADMIN, HOST, MODERATOR, PARTICIPANT
+  isActive          Boolean       @default(true)
+  isVerified        Boolean       @default(false)
+  lastLogin         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+  refreshTokenHash  String?
+  resetTokenHash    String?
+  resetTokenExpires DateTime?
+  quizzes           Quiz[]        @relation("HostQuizzes")
+  sessions          QuizSession[] @relation("HostSessions")
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@index([deletedAt])
 }
 
 model Quiz {

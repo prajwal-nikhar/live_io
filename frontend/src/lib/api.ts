@@ -17,11 +17,9 @@ export const getSocketUrl = () => {
   return getBackendUrl();
 };
 
-// Extract E2B Traffic Access Token if passed in URL or cookies
 export const getE2BTrafficAccessToken = (): string | null => {
   if (typeof window === 'undefined') return null;
 
-  // 1. Try URL parameters first
   const params = new URLSearchParams(window.location.search);
   const tokenKeys = [
     'e2b-traffic-access-token',
@@ -39,11 +37,9 @@ export const getE2BTrafficAccessToken = (): string | null => {
     }
   }
 
-  // 2. Try localStorage cache
   const cached = localStorage.getItem('e2b_traffic_access_token');
   if (cached) return cached;
 
-  // 3. Try parsing cookies
   try {
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
@@ -58,7 +54,9 @@ export const getE2BTrafficAccessToken = (): string | null => {
   return null;
 };
 
-export const apiRequest = async (path: string, options: RequestInit = {}) => {
+let isRefreshing = false;
+
+export const apiRequest = async (path: string, options: RequestInit = {}, retryCount = 0): Promise<any> => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const baseUrl = getBackendUrl();
   const e2bToken = getE2BTrafficAccessToken();
@@ -66,7 +64,7 @@ export const apiRequest = async (path: string, options: RequestInit = {}) => {
   const headers = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(e2bToken ? { 'e2b-traffic-access-token': e2bToken } : {}), // Bypasses E2B Sandbox proxy locks!
+    ...(e2bToken ? { 'e2b-traffic-access-token': e2bToken } : {}),
     ...(options.headers || {}),
   };
 
@@ -74,6 +72,44 @@ export const apiRequest = async (path: string, options: RequestInit = {}) => {
     ...options,
     headers,
   });
+
+  // Handle 401 Unauthorized with Automatic Refresh Token Rotation
+  if (response.status === 401 && retryCount === 0 && !path.includes('/auth/login') && !path.includes('/auth/refresh')) {
+    const storedRefreshToken = typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+    if (storedRefreshToken && !isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshResponse = await fetch(`${baseUrl}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken: storedRefreshToken }),
+        });
+
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          localStorage.setItem('token', refreshData.accessToken);
+          localStorage.setItem('refreshToken', refreshData.refreshToken);
+          isRefreshing = false;
+
+          // Retry original request with newly issued access token
+          return apiRequest(path, options, 1);
+        }
+      } catch (err) {
+        console.error('Refresh token failed:', err);
+      } finally {
+        isRefreshing = false;
+      }
+
+      // If refresh failed, clear tokens and redirect to login
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        if (window.location.pathname.startsWith('/host')) {
+          window.location.href = '/auth';
+        }
+      }
+    }
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({ message: 'Request failed' }));

@@ -1,55 +1,59 @@
-import { Controller, Post, Body, Get, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  RegisterDto,
+  LoginDto,
+  RefreshTokenDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+} from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() body: any) {
-    const { email, password, name, role } = body;
-    if (!email || !password || !name) {
-      throw new BadRequestException('Email, password, and name are required');
-    }
-    return this.authService.register(email, password, name, role || 'HOST');
+  async register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto.email, dto.password, dto.name, dto.role || 'HOST');
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('login')
-  async login(@Body() body: any) {
-    const { email, password } = body;
-    if (!email || !password) {
-      throw new BadRequestException('Email and password are required');
-    }
-    return this.authService.login(email, password);
+  async login(@Body() dto: LoginDto) {
+    return this.authService.login(dto.email, dto.password);
   }
 
-  @Post('google')
-  async googleLogin(@Body() body: any) {
-    const { token, name, email } = body;
-    if (!token || !email || !name) {
-      throw new BadRequestException('Token, email, and name are required');
-    }
-    return this.authService.googleLogin(token, name, email);
-  }
-
+  @HttpCode(HttpStatus.OK)
   @Post('refresh')
-  async refresh(@Body() body: any) {
-    const { refreshToken } = body;
-    if (!refreshToken) {
-      throw new BadRequestException('Refresh token is required');
-    }
-    try {
-      const decoded: any = this.authService['jwtService'].verify(refreshToken);
-      return this.authService.refreshToken(decoded.sub);
-    } catch (e) {
-      throw new BadRequestException('Invalid or expired refresh token');
-    }
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.refreshToken);
   }
 
-  @Get('profile')
   @UseGuards(AuthGuard('jwt'))
-  getProfile(@Request() req: any) {
-    return req.user;
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
+  async logout(@Request() req: any) {
+    return this.authService.logout(req.user.id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @HttpCode(HttpStatus.OK)
+  @Post('change-password')
+  async changePassword(@Request() req: any, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user.id, dto.currentPassword, dto.newPassword);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.newPassword);
   }
 }

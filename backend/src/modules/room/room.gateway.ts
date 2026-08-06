@@ -13,9 +13,11 @@ import { QuizService } from '../quiz/quiz.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Logger } from '@nestjs/common';
 
+import { JwtService } from '@nestjs/jwt';
+
 @WebSocketGateway({
   cors: {
-    origin: '*', // Permissive for sandbox environments
+    origin: '*',
   },
 })
 export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -28,10 +30,27 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private roomService: RoomService,
     private quizService: QuizService,
     private prisma: PrismaService,
+    private jwtService: JwtService,
   ) {}
 
-  handleConnection(client: Socket) {
-    this.logger.log(`Socket connected: ${client.id}`);
+  async handleConnection(client: Socket) {
+    try {
+      const token =
+        client.handshake.auth?.token ||
+        client.handshake.headers?.authorization?.replace('Bearer ', '');
+
+      if (token) {
+        const payload = this.jwtService.verify(token, {
+          secret: process.env.JWT_SECRET || 'cognition-super-secret-jwt-key-2026',
+        });
+        client.data.user = payload;
+        this.logger.log(`Authenticated Socket connected: ${client.id} (User: ${payload.email}, Role: ${payload.role})`);
+      } else {
+        this.logger.log(`Anonymous Socket connected: ${client.id}`);
+      }
+    } catch (err: any) {
+      this.logger.warn(`Socket authentication failed for ${client.id}: ${err.message}`);
+    }
   }
 
   async handleDisconnect(client: Socket) {
