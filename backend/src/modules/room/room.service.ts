@@ -295,27 +295,35 @@ export class RoomService {
       }
     }
 
-    // Write Response to database
-    await this.prisma.response.create({
-      data: {
-        playerId: player.id,
-        questionId,
-        optionId: optionId || null,
-        textResponse: textResponse || null,
-        isCorrect,
-        pointsEarned,
-        responseTimeMs,
-      },
-    });
+    // Write Response to database (with atomic race condition handling)
+    let updatedPlayer;
+    try {
+      await this.prisma.response.create({
+        data: {
+          playerId: player.id,
+          questionId,
+          optionId: optionId || null,
+          textResponse: textResponse || null,
+          isCorrect,
+          pointsEarned,
+          responseTimeMs,
+        },
+      });
 
-    // Update Player accumulators
-    const updatedPlayer = await this.prisma.player.update({
-      where: { id: player.id },
-      data: {
-        score: { increment: pointsEarned },
-        streak: newStreak,
-      },
-    });
+      // Update Player accumulators
+      updatedPlayer = await this.prisma.player.update({
+        where: { id: player.id },
+        data: {
+          score: { increment: pointsEarned },
+          streak: newStreak,
+        },
+      });
+    } catch (err: any) {
+      if (err.code === 'P2002') {
+        return { duplicate: true };
+      }
+      throw err;
+    }
 
     return {
       isCorrect: isCorrect === 'true',

@@ -1,6 +1,6 @@
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -35,6 +35,9 @@ model Quiz {
   updatedAt        DateTime      @updatedAt
   questions        Question[]
   sessions         QuizSession[]
+
+  @@index([hostId])
+  @@index([isPublic])
 }
 
 model Question {
@@ -52,6 +55,9 @@ model Question {
   updatedAt   DateTime   @updatedAt
   options     Option[]
   responses   Response[]
+
+  @@index([quizId])
+  @@index([order])
 }
 
 model Option {
@@ -61,6 +67,8 @@ model Option {
   text       String
   isCorrect  String     @default("false") // "true" or "false"
   responses  Response[]
+
+  @@index([questionId])
 }
 
 model QuizSession {
@@ -75,6 +83,11 @@ model QuizSession {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   players           Player[]
+
+  @@index([pin])
+  @@index([quizId])
+  @@index([hostId])
+  @@index([status])
 }
 
 model Player {
@@ -90,6 +103,9 @@ model Player {
   responses   Response[]
 
   @@unique([sessionId, name])
+  @@index([sessionId])
+  @@index([socketId])
+  @@index([isConnected])
 }
 
 model Response {
@@ -107,4 +123,7 @@ model Response {
   createdAt      DateTime @default(now())
 
   @@unique([playerId, questionId])
+  @@index([playerId])
+  @@index([questionId])
+  @@index([optionId])
 }

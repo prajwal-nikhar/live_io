@@ -9,36 +9,52 @@ export class RedisIoAdapter extends IoAdapter {
   private adapterConstructor: ReturnType<typeof createAdapter> | null = null;
 
   async connectToRedis(): Promise<boolean> {
-    const redisUrl = process.env.REDIS_URL;
+    const redisUrl = process.env.REDIS_URL || process.env.REDIS_PRIVATE_URL || process.env.REDIS_PUBLIC_URL;
     if (!redisUrl) {
-      this.logger.log('No REDIS_URL provided. Operating WebSocket gateway in single-instance mode (Local).');
+      this.logger.log('No REDIS_URL/REDIS_PRIVATE_URL provided. Operating WebSocket gateway in single-instance mode.');
       return false;
     }
 
     try {
-      this.logger.log(`Initializing Redis adapter using endpoint: ${redisUrl}...`);
+      this.logger.log(`Initializing Redis adapter using endpoint...`);
       const pubClient = new Redis(redisUrl, {
         maxRetriesPerRequest: 3,
-        connectTimeout: 3000,
+        connectTimeout: 5000,
+        lazyConnect: true,
       });
       const subClient = pubClient.duplicate();
 
       await Promise.all([
-        pubClient.connect().catch(() => {}),
-        subClient.connect().catch(() => {}),
+        pubClient.connect(),
+        subClient.connect(),
       ]);
 
       this.adapterConstructor = createAdapter(pubClient, subClient);
-      this.logger.log('WebSocket Redis adapter successfully configured. Cluster ready for 10,000+ connections!');
+      this.logger.log('WebSocket Redis adapter successfully configured. Ready for 1,000+ concurrent connections!');
       return true;
     } catch (err: any) {
-      this.logger.warn(`Failed to establish Redis adapter connections: ${err.message}. Falling back to standard socket adapter.`);
+      this.logger.warn(`Failed to establish Redis adapter connections: ${err.message}. Falling back to in-memory socket adapter.`);
       return false;
     }
   }
 
   createIOServer(port: number, options?: ServerOptions): any {
-    const server = super.createIOServer(port, options);
+    const frontendUrl = process.env.FRONTEND_URL;
+    const corsOptions = {
+      origin: frontendUrl ? [frontendUrl, 'http://localhost:3000'] : '*',
+      methods: ['GET', 'POST'],
+      credentials: true,
+    };
+
+    const serverOptions: ServerOptions = {
+      ...options,
+      cors: corsOptions,
+      pingTimeout: 20000,
+      pingInterval: 10000,
+      maxHttpBufferSize: 1e6, // 1MB payload ceiling for memory security
+    };
+
+    const server = super.createIOServer(port, serverOptions);
     if (this.adapterConstructor) {
       server.adapter(this.adapterConstructor);
     }

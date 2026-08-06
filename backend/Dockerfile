@@ -1,6 +1,8 @@
 # Stage 1: Build dependencies and app
 FROM node:20-bookworm-slim AS builder
 
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -16,6 +18,8 @@ RUN npm run build
 # Stage 2: Production execution environment
 FROM node:20-bookworm-slim
 
+RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -28,4 +32,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 4000
 
-CMD ["node", "dist/src/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
