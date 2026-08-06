@@ -245,10 +245,20 @@ export class RoomService {
     });
     if (!session) return [];
 
-    return this.prisma.player.findMany({
+    const players = await this.prisma.player.findMany({
       where: { sessionId: session.id },
       orderBy: { score: 'desc' },
     });
+
+    const uniqueMap = new Map<string, typeof players[0]>();
+    for (const player of players) {
+      const normalized = player.name.trim().toLowerCase();
+      if (!uniqueMap.has(normalized)) {
+        uniqueMap.set(normalized, player);
+      }
+    }
+
+    return Array.from(uniqueMap.values());
   }
 
   // Host Action: Start Quiz

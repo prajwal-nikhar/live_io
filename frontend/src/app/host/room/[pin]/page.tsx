@@ -27,6 +27,19 @@ export default function HostRoom() {
   const [chatInput, setChatInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const deduplicateLeaderboard = (list: any[]): any[] => {
+    if (!Array.isArray(list)) return [];
+    const map = new Map<string, any>();
+    for (const item of list) {
+      if (!item || !item.name) continue;
+      const key = item.name.trim().toLowerCase();
+      if (!map.has(key) || (item.score || 0) > (map.get(key).score || 0)) {
+        map.set(key, item);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (b.score || 0) - (a.score || 0));
+  };
+
   useEffect(() => {
     setPlayers([]);
     setLeaderboard([]);
@@ -50,7 +63,7 @@ export default function HostRoom() {
       setTotalQuestions(sync.totalQuestions || 1);
       setRemainingSeconds(sync.remainingSeconds || 0);
       setCurrentQuestion(sync.currentQuestion);
-      if (sync.leaderboard) setLeaderboard(sync.leaderboard);
+      if (sync.leaderboard) setLeaderboard(deduplicateLeaderboard(sync.leaderboard));
     }
 
     syncHost();
@@ -80,17 +93,17 @@ export default function HostRoom() {
     socket.on('answer:reveal', (data: any) => {
       setSessionState('ANSWER_REVEAL');
       if (data.stats) setStats(data.stats);
-      if (data.leaderboard) setLeaderboard(data.leaderboard);
+      if (data.leaderboard) setLeaderboard(deduplicateLeaderboard(data.leaderboard));
     });
 
     socket.on('leaderboard:update', (data: any) => {
       setSessionState('LEADERBOARD');
-      if (data.leaderboard) setLeaderboard(data.leaderboard);
+      if (data.leaderboard) setLeaderboard(deduplicateLeaderboard(data.leaderboard));
     });
 
     socket.on('quiz:finished', (data: any) => {
       setSessionState('QUIZ_FINISHED');
-      if (data.leaderboard) setLeaderboard(data.leaderboard);
+      if (data.leaderboard) setLeaderboard(deduplicateLeaderboard(data.leaderboard));
 
       confetti({
         particleCount: 150,

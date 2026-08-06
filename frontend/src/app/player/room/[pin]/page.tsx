@@ -27,6 +27,19 @@ export default function PlayerRoom() {
   const [streak, setStreak] = useState(0);
   const [reconnectError, setReconnectError] = useState<string | null>(null);
 
+  const deduplicateLeaderboard = (list: any[]): any[] => {
+    if (!Array.isArray(list)) return [];
+    const map = new Map<string, any>();
+    for (const item of list) {
+      if (!item || !item.name) continue;
+      const key = item.name.trim().toLowerCase();
+      if (!map.has(key) || (item.score || 0) > (map.get(key).score || 0)) {
+        map.set(key, item);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (b.score || 0) - (a.score || 0));
+  };
+
   useEffect(() => {
     const socket = getSocket();
     const storedDataStr = localStorage.getItem(`aura_quiz_player_${pin}`);
@@ -75,7 +88,7 @@ export default function PlayerRoom() {
         setSelectedOptionId(sync.selectedOptionId);
       }
       if (sync.leaderboard) {
-        setLeaderboard(sync.leaderboard);
+        setLeaderboard(deduplicateLeaderboard(sync.leaderboard));
       }
       if (sync.player) {
         setScore(sync.player.score || 0);
@@ -114,12 +127,12 @@ export default function PlayerRoom() {
 
     socket.on('answer:reveal', (data: any) => {
       setSessionState('ANSWER_REVEAL');
-      if (data.leaderboard) setLeaderboard(data.leaderboard);
+      if (data.leaderboard) setLeaderboard(deduplicateLeaderboard(data.leaderboard));
     });
 
     socket.on('quiz:finished', (data: any) => {
       setSessionState('QUIZ_FINISHED');
-      if (data.leaderboard) setLeaderboard(data.leaderboard);
+      if (data.leaderboard) setLeaderboard(deduplicateLeaderboard(data.leaderboard));
     });
 
     return () => {
