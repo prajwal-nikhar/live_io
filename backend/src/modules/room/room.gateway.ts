@@ -208,37 +208,40 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  // HOST: Start Quiz (Supports Acknowledgement Callback)
+  // HOST: Start Quiz (Supports Acknowledgement Callback & Canonical host:start)
   @SubscribeMessage('host:start')
   @SubscribeMessage('host_start_quiz')
+  @SubscribeMessage('host_start_game')
   async handleStartQuiz(
-    @MessageBody() data: { pin: string; hostId: string },
+    @MessageBody() data: { pin: string; hostId?: string },
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
-      const { pin, hostId } = data;
-      this.logger.log(`[Host Action] Start quiz for PIN ${pin}`);
+      const pin = data.pin;
+      const hostId = data.hostId || client.data.user?.id;
+      this.logger.log(`[Host Action] Start quiz for PIN ${pin} (Host: ${hostId || 'anonymous'})`);
 
       const { question, remainingSeconds } = await this.roomService.startQuiz(pin, hostId);
       const syncState = await this.roomService.getSyncState(pin);
 
-      this.server.to(`room:${pin}`).emit('question:start', {
+      const payload = {
         question,
         remainingSeconds,
         questionIndex: 0,
         totalQuestions: syncState?.totalQuestions || 1,
-      });
+      };
 
-      this.server.to(`room:${pin}`).emit('quiz_started', {
-        question,
-        remainingSeconds,
-        questionIndex: 0,
-      });
-
+      // Broadcast canonical and legacy events to room
+      this.server.to(`room:${pin}`).emit('question:start', payload);
+      this.server.to(`room:${pin}`).emit('quiz_started', payload);
       this.server.to(`room:${pin}`).emit('session:sync', syncState);
+
+      this.logger.log(`[Participants Acknowledged] Broadcasted question:start to room:${pin}`);
+      this.logger.log(`[Host Acknowledged] Successfully started quiz for PIN ${pin}`);
 
       return { success: true, data: { question, remainingSeconds, syncState } };
     } catch (error: any) {
+      this.logger.error(`[Start Quiz Failed] PIN ${data?.pin}: ${error.message}`);
       client.emit('error', { message: error.message || 'Failed to start quiz' });
       return { success: false, message: error.message || 'Failed to start quiz' };
     }

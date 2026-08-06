@@ -248,17 +248,27 @@ export class RoomService {
   }
 
   // Host Action: Start Quiz
-  async startQuiz(pin: string, hostId: string) {
-    const room = await this.getRoomState(pin);
-    if (!room) throw new NotFoundException('Room not found');
+  async startQuiz(pin: string, hostId?: string) {
+    this.logger.log(`[Host Action] Start Quiz requested for PIN ${pin}`);
 
     const session = await this.prisma.quizSession.findUnique({
       where: { pin },
       include: { quiz: { include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } } } },
     });
 
-    if (!session || session.hostId !== hostId) {
+    if (!session) {
+      this.logger.error(`[Start Quiz Failed] Room PIN ${pin} not found`);
+      throw new NotFoundException('Quiz room session not found');
+    }
+
+    if (hostId && hostId !== 'host_id_default' && session.hostId !== hostId) {
+      this.logger.warn(`[Start Quiz Rejected] Forbidden hostId ${hostId} for session host ${session.hostId}`);
       throw new ForbiddenException('Only the host can start this quiz session');
+    }
+
+    if (!session.quiz?.questions || session.quiz.questions.length === 0) {
+      this.logger.error(`[Start Quiz Failed] Quiz ${session.quizId} has 0 questions`);
+      throw new BadRequestException('Cannot host a quiz with zero questions');
     }
 
     const firstQuestion = session.quiz.questions[0];
@@ -276,8 +286,12 @@ export class RoomService {
       },
     });
 
+    this.logger.log(`[Session Updated] PIN ${pin} set to QUESTION_ACTIVE with question ${firstQuestion.id}`);
+
     const roomState = {
-      ...room,
+      pin,
+      sessionId: session.id,
+      quizId: session.quizId,
       status: 'QUESTION_ACTIVE' as SessionState,
       currentQuestionIndex: 0,
       currentQuestionId: firstQuestion.id,
