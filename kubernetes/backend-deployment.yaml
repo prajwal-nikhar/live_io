@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-backend
+  labels:
+    app: quiz-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: quiz-backend
+  template:
+    metadata:
+      labels:
+        app: quiz-backend
+    spec:
+      containers:
+      - name: backend
+        image: yourcontainerregistry/quiz-backend:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: PORT
+          value: "4000"
+        - name: DATABASE_URL
+          value: "postgresql://quiz_admin:quiz_secure_password_1029@quiz-postgres-service:5432/quiz_platform_prod?schema=public"
+        - name: REDIS_URL
+          value: "redis://quiz-redis-service:6379"
+        - name: JWT_SECRET
+          value: "enterprise-super-secret-production-jwt-key"
+        - name: NODE_ENV
+          value: "production"
+        ports:
+        - containerPort: 4000
+          name: apiport
+        resources:
+          limits:
+            cpu: "1.5"
+            memory: 2Gi
+          requests:
+            cpu: "1"
+            memory: 1Gi
+        readinessProbe:
+          httpGet:
+            path: /auth/profile
+            port: 4000
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /auth/profile
+            port: 4000
+          initialDelaySeconds: 20
+          periodSeconds: 15
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quiz-backend-service
+spec:
+  selector:
+    app: quiz-backend
+  ports:
+  - port: 4000
+    targetPort: 4000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: quiz-backend-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: quiz-backend
+  minReplicas: 3
+  maxReplicas: 15
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

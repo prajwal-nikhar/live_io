@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-redis
+  labels:
+    app: quiz-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quiz-redis
+  template:
+    metadata:
+      labels:
+        app: quiz-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redisport
+        resources:
+          limits:
+            cpu: "500m"
+            memory: 1Gi
+          requests:
+            cpu: "250m"
+            memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quiz-redis-service
+spec:
+  selector:
+    app: quiz-redis
+  ports:
+  - port: 6379
+    targetPort: 6379

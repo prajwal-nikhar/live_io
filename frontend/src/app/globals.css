@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+:root.dark {
+  --background: #0b0f19;
+  --foreground: #f8fafc;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism utility classes */
+.glass {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom premium gradients */
+.gradient-brand {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+}
+
+.gradient-dark {
+  background: radial-gradient(circle at top, #1e1b4b 0%, #0f172a 100%);
+}
+
+/* Interactive card shadows */
+.shadow-premium {
+  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.05);
+}
+.dark .shadow-premium {
+  box-shadow: 0 10px 30px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* Animation utilities to eliminate layout shifts */
+.smooth-transition {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}

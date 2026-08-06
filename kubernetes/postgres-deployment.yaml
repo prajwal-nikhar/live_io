@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-postgres
+  labels:
+    app: quiz-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quiz-postgres
+  template:
+    metadata:
+      labels:
+        app: quiz-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_USER
+          value: quiz_admin
+        - name: POSTGRES_PASSWORD
+          value: quiz_secure_password_1029
+        - name: POSTGRES_DB
+          value: quiz_platform_prod
+        ports:
+        - containerPort: 5432
+          name: dbport
+        resources:
+          limits:
+            cpu: "1"
+            memory: 2Gi
+          requests:
+            cpu: "500m"
+            memory: 1Gi
+        volumeMounts:
+        - name: pgdata-volume
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: pgdata-volume
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quiz-postgres-service
+spec:
+  selector:
+    app: quiz-postgres
+  ports:
+  - port: 5432
+    targetPort: 5432

@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: quiz_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: quiz_admin
+      POSTGRES_PASSWORD: quiz_secure_password_1029
+      POSTGRES_DB: quiz_platform_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quiz_admin -d quiz_platform_prod"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: quiz_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quiz_backend
+    restart: always
+    environment:
+      PORT: 4000
+      DATABASE_URL: "postgresql://quiz_admin:quiz_secure_password_1029@postgres:5432/quiz_platform_prod?schema=public"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "enterprise-super-secret-production-jwt-key"
+      NODE_ENV: production
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: quiz_frontend
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: "http://localhost:4000"
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:

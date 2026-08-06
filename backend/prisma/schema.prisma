@@ -1,0 +1,109 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  passwordHash String
+  name         String
+  role         String        @default("PARTICIPANT") // ADMIN, HOST, PARTICIPANT, MODERATOR
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  quizzes      Quiz[]        @relation("HostQuizzes")
+  sessions     QuizSession[] @relation("HostSessions")
+}
+
+model Quiz {
+  id               String        @id @default(uuid())
+  title            String
+  description      String?
+  coverImage       String?
+  hostId           String
+  host             User          @relation("HostQuizzes", fields: [hostId], references: [id], onDelete: Cascade)
+  isPublic         String        @default("false") // "true" or "false"
+  randomizeOrder   String        @default("false")
+  negativeMarking  String        @default("false")
+  pointsMultiplier Float         @default(1.0)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  questions        Question[]
+  sessions         QuizSession[]
+}
+
+model Question {
+  id          String     @id @default(uuid())
+  quizId      String
+  quiz        Quiz       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  text        String
+  type        String     @default("MULTIPLE_CHOICE") // MULTIPLE_CHOICE, TRUE_FALSE, POLL, OPEN_TEXT
+  order       Int        @default(0)
+  points      Int        @default(100)
+  timeLimit   Int        @default(20) // in seconds
+  imageUrl    String?
+  explanation String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  options     Option[]
+  responses   Response[]
+}
+
+model Option {
+  id         String     @id @default(uuid())
+  questionId String
+  question   Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  String     @default("false") // "true" or "false"
+  responses  Response[]
+}
+
+model QuizSession {
+  id                String   @id @default(uuid())
+  quizId            String
+  quiz              Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  hostId            String
+  host              User     @relation("HostSessions", fields: [hostId], references: [id], onDelete: Cascade)
+  pin               String   @unique
+  status            String   @default("LOBBY") // LOBBY, PLAYING, LEADERBOARD, FINISHED
+  currentQuestionId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  players           Player[]
+}
+
+model Player {
+  id          String      @id @default(uuid())
+  sessionId   String
+  session     QuizSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  name        String
+  socketId    String?
+  score       Int         @default(0)
+  streak      Int         @default(0)
+  isConnected String      @default("true") // "true" or "false"
+  createdAt   DateTime    @default(now())
+  responses   Response[]
+
+  @@unique([sessionId, name])
+}
+
+model Response {
+  id             String   @id @default(uuid())
+  playerId       String
+  player         Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  questionId     String
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  optionId       String?
+  option         Option?  @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  textResponse   String?
+  isCorrect      String   @default("false") // "true" or "false"
+  pointsEarned   Int      @default(0)
+  responseTimeMs Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  @@unique([playerId, questionId])
+}
