@@ -1,12 +1,12 @@
 import { io, Socket } from 'socket.io-client';
-import { getBackendUrl, getE2BTrafficAccessToken } from './api';
+import { getBackendUrl, getSocketUrl, getE2BTrafficAccessToken } from './api';
 
 let socket: Socket | null = null;
 
 export const getSocket = (): Socket => {
   if (socket) return socket;
 
-  const url = getBackendUrl();
+  const url = getSocketUrl();
   const e2bToken = getE2BTrafficAccessToken();
 
   console.log(`Connecting Socket.IO to ${url}...`);

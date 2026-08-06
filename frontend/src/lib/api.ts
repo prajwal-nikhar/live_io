@@ -1,12 +1,20 @@
 export const getBackendUrl = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
   if (typeof window === 'undefined') return 'http://localhost:4000';
   const origin = window.location.origin;
   if (origin.includes('.e2b.app')) {
-    // Graceful multi-port sandbox mapping: Port 3000 (Next.js) -> Port 4000 (NestJS Backend)
     return origin.replace('3000-', '4000-');
   }
-  // Local or production fallback
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  return 'http://localhost:4000';
+};
+
+export const getSocketUrl = () => {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) {
+    return process.env.NEXT_PUBLIC_SOCKET_URL;
+  }
+  return getBackendUrl();
 };
 
 // Extract E2B Traffic Access Token if passed in URL or cookies
