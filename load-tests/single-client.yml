@@ -3,25 +3,25 @@ config:
   socketio:
     transports:
       - "websocket"
-    path: "/socket.io"
+    path: "/socket.io/"
   phases:
-    - duration: 60
-      arrivalRate: 10
-      name: Sustain 600 Concurrent Players (60s)
+    - duration: 1
+      arrivalCount: 1
+      name: One Client Test
 
 engines:
   socketio: {}
 
 scenarios:
-  - name: Join Quiz
+  - name: Single Client Join
     engine: socketio
     flow:
       - connect: {}
       - emit:
           channel: "player:join"
           data:
-            pin: "110257"
-            name: "Player_{{ $randomString() }}"
+            pin: "999999"
+            name: "SingleTestPlayer"
           response:
             channel: "player:joined"
-      - think: 60
+      - think: 2
