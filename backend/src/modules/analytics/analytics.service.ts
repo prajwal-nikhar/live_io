@@ -19,8 +19,12 @@ export class AnalyticsService {
       },
     });
 
-    const activeRoomsCount = sessions.filter((s) => s.status !== 'FINISHED').length;
-    const completedRoomsCount = sessions.filter((s) => s.status === 'FINISHED').length;
+    const completedRoomsCount = sessions.filter(
+      (s) => s.status === 'FINISHED' || s.status === 'QUIZ_FINISHED',
+    ).length;
+    const activeRoomsCount = sessions.filter(
+      (s) => s.status !== 'FINISHED' && s.status !== 'QUIZ_FINISHED',
+    ).length;
 
     const totalPlayersCount = sessions.reduce((acc, s) => acc + s.players.length, 0);
 
