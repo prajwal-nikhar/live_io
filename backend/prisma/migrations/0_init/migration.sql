@@ -6,7 +6,7 @@ CREATE TABLE "User" (
     "name" TEXT NOT NULL,
     "role" TEXT NOT NULL DEFAULT 'PARTICIPANT',
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "isVerified" BOOLEAN NOT NULL DEFAULT false,
+    "isVerified" BOOLEAN NOT NULL DEFAULT true,
     "lastLogin" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -69,7 +69,10 @@ CREATE TABLE "QuizSession" (
     "hostId" TEXT NOT NULL,
     "pin" TEXT NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'LOBBY',
+    "currentQuestionIndex" INTEGER NOT NULL DEFAULT 0,
     "currentQuestionId" TEXT,
+    "questionStartTime" TIMESTAMP(3),
+    "questionEndTime" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -82,9 +85,12 @@ CREATE TABLE "Player" (
     "sessionId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "socketId" TEXT,
+    "reconnectToken" TEXT NOT NULL,
     "score" INTEGER NOT NULL DEFAULT 0,
     "streak" INTEGER NOT NULL DEFAULT 0,
     "isConnected" TEXT NOT NULL DEFAULT 'true',
+    "lastSeen" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "connectionVersion" INTEGER NOT NULL DEFAULT 1,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Player_pkey" PRIMARY KEY ("id")
@@ -110,7 +116,6 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE INDEX "User_email_idx" ON "User"("email");
 CREATE INDEX "User_role_idx" ON "User"("role");
 CREATE INDEX "User_isActive_idx" ON "User"("isActive");
-CREATE INDEX "User_deletedAt_idx" ON "User"("deletedAt");
 
 -- CreateIndex
 CREATE INDEX "Quiz_hostId_idx" ON "Quiz"("hostId");
@@ -133,6 +138,7 @@ CREATE INDEX "QuizSession_status_idx" ON "QuizSession"("status");
 -- CreateIndex
 CREATE INDEX "Player_sessionId_idx" ON "Player"("sessionId");
 CREATE INDEX "Player_socketId_idx" ON "Player"("socketId");
+CREATE INDEX "Player_reconnectToken_idx" ON "Player"("reconnectToken");
 CREATE INDEX "Player_isConnected_idx" ON "Player"("isConnected");
 CREATE UNIQUE INDEX "Player_sessionId_name_key" ON "Player"("sessionId", "name");
 

@@ -122,9 +122,15 @@ model QuizSession {
 
   pin String @unique
 
-  status String @default("LOBBY")
+  status String @default("LOBBY") // LOBBY, QUESTION_ACTIVE, QUESTION_LOCKED, ANSWER_REVEAL, LEADERBOARD, QUIZ_FINISHED
+
+  currentQuestionIndex Int @default(0)
 
   currentQuestionId String?
+
+  questionStartTime DateTime?
+
+  questionEndTime DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -150,11 +156,17 @@ model Player {
 
   socketId String?
 
+  reconnectToken String @default(uuid())
+
   score Int @default(0)
 
   streak Int @default(0)
 
   isConnected String @default("true")
+
+  lastSeen DateTime @default(now())
+
+  connectionVersion Int @default(1)
 
   createdAt DateTime @default(now())
 
@@ -165,6 +177,7 @@ model Player {
   @@unique([sessionId, name])
   @@index([sessionId])
   @@index([socketId])
+  @@index([reconnectToken])
   @@index([isConnected])
 }
 
