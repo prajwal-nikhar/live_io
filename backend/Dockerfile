@@ -3,14 +3,13 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy lock files and packages
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm ci
+RUN npm install --legacy-peer-deps
 
-# Copy sources and compile
 COPY . .
+
 RUN npx prisma generate
 RUN npm run build
 
@@ -20,10 +19,11 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+
+RUN npm install --omit=dev --legacy-peer-deps
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 4000
