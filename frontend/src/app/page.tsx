@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSocket } from '@/lib/socket';
+import { emitWithTimeout } from '@/lib/socket';
 import { Sparkles, Play, Award, ShieldAlert, Monitor, CheckCircle, Moon, Sun } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -15,12 +15,10 @@ export default function LandingPage() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   useEffect(() => {
-    // Sync theme setting
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme as any);
     document.documentElement.className = savedTheme;
 
-    // Check url search params for pin
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const urlPin = params.get('pin');
@@ -48,6 +46,7 @@ export default function LandingPage() {
     setStep('NICKNAME');
   };
 
+  // Deterministic Join Flow using Socket.IO Acknowledgement Callbacks with 10s Timeout
   const handleNicknameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!nickname || nickname.trim().length < 2) {
@@ -58,34 +57,36 @@ export default function LandingPage() {
     setError('');
     setStep('JOINING');
 
-    const socket = getSocket();
-    
-    // Connect to room and validate details
-    socket.emit('player_join', { pin, name: nickname });
+    const res = await emitWithTimeout('player:join', { pin, name: nickname }, 10000);
 
-    socket.once('join_success', (data) => {
-      // Save details to sessionStorage for reconnection / state management
+    if (res.success && res.data?.player) {
+      const p = res.data.player;
       sessionStorage.setItem('player_pin', pin);
       sessionStorage.setItem('player_name', nickname);
-      sessionStorage.setItem('player_id', data.player.id);
-      
-      // Redirect to the participant's dynamic room
-      router.push(`/player/room/${pin}`);
-    });
+      sessionStorage.setItem('player_id', p.id);
 
-    socket.once('join_error', (err) => {
-      setError(err.message || 'Unable to join. Verify your PIN and try again.');
+      localStorage.setItem(
+        `aura_quiz_player_${pin}`,
+        JSON.stringify({
+          pin,
+          playerId: p.id,
+          name: p.name,
+          reconnectToken: p.reconnectToken,
+        }),
+      );
+
+      router.push(`/player/room/${pin}`);
+    } else {
+      setError(res.message || 'Unable to join. Verify your PIN and try again.');
       setStep('NICKNAME');
-    });
+    }
   };
 
   return (
     <div className="relative min-h-screen gradient-dark flex flex-col justify-between overflow-hidden text-slate-100 px-4">
-      {/* Background visual graphics */}
       <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/40 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-900/30 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Floating Header */}
       <header className="w-full max-w-6xl mx-auto flex justify-between items-center py-6 relative z-10">
         <div className="flex items-center gap-3">
           <div className="p-2.5 gradient-brand rounded-xl shadow-lg shadow-indigo-500/20">
@@ -97,14 +98,14 @@ export default function LandingPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
+          <button
             onClick={toggleTheme}
             className="p-2.5 rounded-xl glass hover:bg-white/10 text-slate-300 smooth-transition"
             title="Toggle Light/Dark Theme"
           >
             {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-300" /> : <Moon className="w-5 h-5" />}
           </button>
-          
+
           <button
             onClick={() => router.push('/auth')}
             className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 active:scale-95 smooth-transition"
@@ -114,12 +115,10 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Main Form container */}
       <main className="flex-1 flex flex-col items-center justify-center py-10 relative z-10">
         <div className="w-full max-w-md">
-          {/* Animated Hero text */}
           <div className="text-center mb-8">
-            <motion.h1 
+            <motion.h1
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-3"
@@ -134,8 +133,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Form Box (Glassmorphic Card) */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="glass rounded-3xl p-8 sm:p-10 shadow-2xl relative"
@@ -170,8 +168,8 @@ export default function LandingPage() {
                   </div>
 
                   {error && (
-                    <motion.div 
-                      initial={{ opacity: 0 }} 
+                    <motion.div
+                      initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className="flex items-center gap-2 text-rose-400 text-sm font-medium bg-rose-500/10 p-3.5 rounded-xl border border-rose-500/20"
                     >
@@ -225,8 +223,8 @@ export default function LandingPage() {
                   </div>
 
                   {error && (
-                    <motion.div 
-                      initial={{ opacity: 0 }} 
+                    <motion.div
+                      initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       className="flex items-center gap-2 text-rose-400 text-sm font-medium bg-rose-500/10 p-3.5 rounded-xl border border-rose-500/20"
                     >
@@ -264,7 +262,6 @@ export default function LandingPage() {
             </AnimatePresence>
           </motion.div>
 
-          {/* Quick link for mobile hosting */}
           <div className="mt-6 text-center sm:hidden">
             <button
               onClick={() => router.push('/auth')}
@@ -276,7 +273,6 @@ export default function LandingPage() {
         </div>
       </main>
 
-      {/* Trust & Performance Footer */}
       <footer className="w-full py-8 text-center border-t border-slate-800 relative z-10">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 px-4">
           <div className="flex items-center gap-2">
