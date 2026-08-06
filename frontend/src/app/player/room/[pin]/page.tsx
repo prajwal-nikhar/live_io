@@ -29,9 +29,7 @@ export default function PlayerRoom() {
 
   useEffect(() => {
     const socket = getSocket();
-
     const storedDataStr = localStorage.getItem(`aura_quiz_player_${pin}`);
-    const nameFromSession = sessionStorage.getItem('player_name');
 
     async function initSession() {
       if (storedDataStr) {
@@ -54,42 +52,16 @@ export default function PlayerRoom() {
               applySyncState(res.data.syncState);
             }
           } else {
-            joinNewPlayer(nameFromSession);
+            localStorage.removeItem(`aura_quiz_player_${pin}`);
+            router.push(`/?pin=${pin}`);
           }
         } catch (e) {
-          joinNewPlayer(nameFromSession);
+          localStorage.removeItem(`aura_quiz_player_${pin}`);
+          router.push(`/?pin=${pin}`);
         }
-      } else if (nameFromSession) {
-        joinNewPlayer(nameFromSession);
       } else {
+        // Player has not joined this PIN yet -> Redirect to landing page to enter PIN and Nickname
         router.push(`/?pin=${pin}`);
-      }
-    }
-
-    async function joinNewPlayer(nameVal: string | null) {
-      const pName = nameVal || `Player_${Math.floor(100 + Math.random() * 900)}`;
-      const res = await emitWithTimeout('player:join', { pin, name: pName }, 10000);
-
-      if (res.success && res.data?.player) {
-        const p = res.data.player;
-        setPlayer(p);
-        setScore(p.score || 0);
-        setStreak(p.streak || 0);
-
-        localStorage.getItem(
-          `aura_quiz_player_${pin}`,
-        );
-        localStorage.setItem(
-          `aura_quiz_player_${pin}`,
-          JSON.stringify({
-            pin,
-            playerId: p.id,
-            name: p.name,
-            reconnectToken: p.reconnectToken,
-          }),
-        );
-      } else {
-        setReconnectError(res.message || 'Failed to join quiz room');
       }
     }
 
@@ -229,7 +201,7 @@ export default function PlayerRoom() {
               <button
                 onClick={() => {
                   localStorage.removeItem(`aura_quiz_player_${pin}`);
-                  window.location.reload();
+                  router.push(`/?pin=${pin}`);
                 }}
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs rounded-xl transition-colors"
               >
