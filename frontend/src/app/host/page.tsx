@@ -94,52 +94,99 @@ export default function HostDashboard() {
     }
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const fields: string[] = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          currentField += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        fields.push(currentField.trim());
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+    fields.push(currentField.trim());
+    return fields;
+  };
+
   const parseCSV = (text: string): any[] => {
-    const lines = text.split('\n');
-    if (lines.length <= 1) return [];
+    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    const lines = normalizedText.split('\n');
+    if (lines.length === 0) return [];
 
     const questions: any[] = [];
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i].trim();
+      if (!rawLine) continue;
 
-      // Split by comma ignoring commas inside quotes
-      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
-      const columns = matches.map(c => c.replace(/^"|"$/g, '').trim());
+      const columns = parseCSVLine(rawLine);
+      if (columns.length < 2) continue;
 
-      if (columns.length < 3) continue;
+      // Skip header row if present
+      const firstCol = columns[0].toLowerCase();
+      if (
+        firstCol.startsWith('question') ||
+        firstCol.startsWith('prompt') ||
+        firstCol === 'question text'
+      ) {
+        continue;
+      }
 
       const questionText = columns[0];
-      const optionTexts = [columns[1], columns[2], columns[3], columns[4]].filter(Boolean);
-      
-      const correctVal = columns[5]?.toUpperCase();
+      if (!questionText) continue;
+
+      const rawOptionTexts = [columns[1], columns[2], columns[3], columns[4]]
+        .map(opt => (opt || '').trim())
+        .filter(Boolean);
+
+      if (rawOptionTexts.length < 2) continue;
+
+      const correctVal = (columns[5] || '').toUpperCase().trim();
       let correctIdx = 0;
+
       if (correctVal === 'A' || correctVal === '1') correctIdx = 0;
       else if (correctVal === 'B' || correctVal === '2') correctIdx = 1;
       else if (correctVal === 'C' || correctVal === '3') correctIdx = 2;
       else if (correctVal === 'D' || correctVal === '4') correctIdx = 3;
       else {
-        const found = optionTexts.findIndex(opt => opt.toLowerCase() === correctVal?.toLowerCase());
+        const found = rawOptionTexts.findIndex(opt => opt.toLowerCase() === correctVal.toLowerCase());
         if (found !== -1) correctIdx = found;
       }
 
-      const options = optionTexts.map((text, idx) => ({
+      const isTrueFalse =
+        rawOptionTexts.length === 2 &&
+        ((rawOptionTexts[0].toUpperCase() === 'TRUE' && rawOptionTexts[1].toUpperCase() === 'FALSE') ||
+         (rawOptionTexts[0].toUpperCase() === 'FALSE' && rawOptionTexts[1].toUpperCase() === 'TRUE'));
+
+      const options = rawOptionTexts.map((text, idx) => ({
         text,
-        isCorrect: idx === correctIdx
+        isCorrect: idx === correctIdx,
       }));
 
       const timeLimit = parseInt(columns[6]) || 20;
       const points = parseInt(columns[7]) || 100;
-      const explanation = columns[8] || 'Imported from CSV';
+      const explanation = columns[8] || '';
 
       questions.push({
         text: questionText,
-        type: 'MULTIPLE_CHOICE',
+        type: isTrueFalse ? 'TRUE_FALSE' : 'MULTIPLE_CHOICE',
         points,
         timeLimit,
         explanation,
-        options
+        options,
       });
     }
 
