@@ -7,25 +7,25 @@ config:
       arrivalRate: 12
 
     - name: "Hold 700 Players"
-      duration: 300
+      duration: 60
       arrivalRate: 12
 
   engines:
     socketio:
-      transports: ["websocket", "polling"]
       path: "/socket.io"
+      transports:
+        - websocket
+        - polling
 
 scenarios:
   - name: "Join Quiz"
     engine: socketio
 
     flow:
-      - connect: {}
-
       - emit:
           channel: "player:join"
           data:
             pin: "999999"
             name: "Player{{ $randomString() }}"
 
-      - think: 300
+      - think: 30
