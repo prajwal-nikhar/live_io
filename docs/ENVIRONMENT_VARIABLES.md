@@ -18,14 +18,15 @@ Comprehensive documentation of environment variables across backend and frontend
 | `JWT_REFRESH_EXPIRATION` | Refresh token lifespan                                        | `7d`                                  |        No        |
 | `SENTRY_DSN`             | Sentry DSN endpoint for error tracking                        | `https://dsn@sentry.io/123`           |   Recommended    |
 | `METRICS_API_KEY`        | Secret key protecting `/metrics` endpoint                     | `your-metrics-secret-key`             |   Recommended    |
-| `FRONTEND_URL`           | Whitelisted CORS origin URL                                   | `http://localhost:3000`               |       Yes        |
+| `FRONTEND_URL`           | Whitelisted CORS origin URL                                   | `https://cognition.up.railway.app`    |       Yes        |
 
 ---
 
 ## 🌐 Frontend Environment Variables (`frontend/.env.local`)
 
-| Variable                 | Description                              | Default / Example           | Required in Prod |
-| :----------------------- | :--------------------------------------- | :-------------------------- | :--------------: |
-| `NEXT_PUBLIC_API_URL`    | Backend REST API base URL                | `http://localhost:4000`     |       Yes        |
-| `NEXT_PUBLIC_SOCKET_URL` | Backend Socket.IO server base URL        | `http://localhost:4000`     |       Yes        |
-| `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN endpoint for browser tracking | `https://dsn@sentry.io/123` |   Recommended    |
+| Variable                 | Description                              | Default / Example                  | Required in Prod |
+| :----------------------- | :--------------------------------------- | :--------------------------------- | :--------------: |
+| `NEXT_PUBLIC_APP_URL`    | Frontend Web Application Base URL        | `https://cognition.up.railway.app` |       Yes        |
+| `NEXT_PUBLIC_API_URL`    | Backend REST API base URL                | `http://localhost:4000`            |       Yes        |
+| `NEXT_PUBLIC_SOCKET_URL` | Backend Socket.IO server base URL        | `http://localhost:4000`            |       Yes        |
+| `NEXT_PUBLIC_SENTRY_DSN` | Sentry DSN endpoint for browser tracking | `https://dsn@sentry.io/123`        |   Recommended    |

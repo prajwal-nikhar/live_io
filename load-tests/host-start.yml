@@ -1,5 +1,5 @@
 config:
-  target: "https://empowering-laughter-production.up.railway.app"
+  target: "https://cognition.up.railway.app"
 
   engines:
     socketio: {}

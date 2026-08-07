@@ -385,7 +385,7 @@ export default function HostRoom() {
                     <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
                       or visit{" "}
                       <strong className="text-indigo-300 font-extrabold">
-                        cognition-gim.com
+                        cognition.up.railway.app
                       </strong>
                     </p>
                   </div>
@@ -400,7 +400,7 @@ export default function HostRoom() {
                         src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                           typeof window !== "undefined"
                             ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
-                            : `https://cognition-gim.com/?pin=${pin}`,
+                            : `https://cognition.up.railway.app/?pin=${pin}`,
                         )}`}
                         alt="Join QR Code"
                         className="w-36 h-36 sm:w-44 sm:h-44 mx-auto"
@@ -883,7 +883,7 @@ export default function HostRoom() {
               src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
                 typeof window !== "undefined"
                   ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
-                  : `https://cognition-gim.com/?pin=${pin}`,
+                  : `https://cognition.up.railway.app/?pin=${pin}`,
               )}`}
               alt="Join QR Code"
               className="w-48 h-48 mx-auto"

@@ -46,8 +46,16 @@ export class RedisIoAdapter extends IoAdapter {
 
   createIOServer(port: number, options?: ServerOptions): any {
     const frontendUrl = process.env.FRONTEND_URL;
+    const allowedOrigins = frontendUrl
+      ? [
+          frontendUrl,
+          "https://cognition.up.railway.app",
+          "http://localhost:3000",
+        ]
+      : ["https://cognition.up.railway.app", "http://localhost:3000", "*"];
+
     const corsOptions = {
-      origin: frontendUrl ? [frontendUrl, "http://localhost:3000"] : "*",
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true,
     };

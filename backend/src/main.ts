@@ -65,10 +65,14 @@ async function bootstrap() {
     next();
   });
 
-  // CORS Configuration supporting FRONTEND_URL or permissive fallback
+  // CORS Configuration supporting FRONTEND_URL, https://cognition.up.railway.app, or fallback
   const frontendUrl = process.env.FRONTEND_URL;
+  const allowedOrigins = frontendUrl
+    ? [frontendUrl, "https://cognition.up.railway.app", "http://localhost:3000"]
+    : ["https://cognition.up.railway.app", "http://localhost:3000", "*"];
+
   app.enableCors({
-    origin: frontendUrl ? [frontendUrl, "http://localhost:3000"] : "*",
+    origin: allowedOrigins,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
     credentials: true,
   });
