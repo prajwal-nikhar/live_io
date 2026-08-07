@@ -68,33 +68,46 @@ export const emitWithTimeout = <T = any>(
     let timer: NodeJS.Timeout | null = null;
     let resolved = false;
 
-    timer = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        console.warn(
-          `[Socket Timeout] Event '${event}' timed out after ${timeoutMs}ms`,
-        );
-        resolve({
-          success: false,
-          message:
-            "Connection timed out. Please check your network and try again.",
-        });
-      }
-    }, timeoutMs);
-
-    s.emit(event, data, (response: AckResponse<T>) => {
-      if (!resolved) {
-        resolved = true;
-        if (timer) clearTimeout(timer);
-        if (!response) {
+    const executeEmit = () => {
+      timer = setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          console.warn(
+            `[Socket Timeout] Event '${event}' timed out after ${timeoutMs}ms`,
+          );
           resolve({
             success: false,
-            message: "Server returned empty response",
+            message:
+              "Connection timed out. Please check your network and try again.",
           });
-        } else {
-          resolve(response);
         }
+      }, timeoutMs);
+
+      s.emit(event, data, (response: AckResponse<T>) => {
+        if (!resolved) {
+          resolved = true;
+          if (timer) clearTimeout(timer);
+          if (!response) {
+            resolve({
+              success: false,
+              message: "Server returned empty response",
+            });
+          } else {
+            resolve(response);
+          }
+        }
+      });
+    };
+
+    if (s.connected) {
+      executeEmit();
+    } else {
+      s.once("connect", () => {
+        executeEmit();
+      });
+      if (!s.active) {
+        s.connect();
       }
-    });
+    }
   });
 };

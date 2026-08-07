@@ -252,7 +252,12 @@ export default function HostDashboard() {
 
   const parseCSVText = (
     text: string,
-  ): { questions: any[]; skipped: number; errors: string[]; extractedQuizTitle?: string } => {
+  ): {
+    questions: any[];
+    skipped: number;
+    errors: string[];
+    extractedQuizTitle?: string;
+  } => {
     const normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     const lines = normalizedText.split("\n");
     const questions: any[] = [];
@@ -286,43 +291,79 @@ export default function HostDashboard() {
       const columnsLower = columns.map((c) => c.toLowerCase());
 
       // Check header row
-      const isHeaderRow = columnsLower.some((c) =>
-        c.includes("quiz title") ||
-        c.includes("question") ||
-        c.includes("prompt") ||
-        c.includes("option a") ||
-        c.includes("correct")
+      const isHeaderRow = columnsLower.some(
+        (c) =>
+          c.includes("quiz title") ||
+          c.includes("question") ||
+          c.includes("prompt") ||
+          c.includes("option a") ||
+          c.includes("correct"),
       );
 
       if (isHeaderRow && !hasHeader) {
         hasHeader = true;
         quizTitleColIdx = columnsLower.findIndex((c) => c.includes("quiz"));
-        questionColIdx = columnsLower.findIndex((c) => c.includes("question") || c.includes("prompt"));
-        optAColIdx = columnsLower.findIndex((c) => c.includes("option a") || c === "option 1" || c === "choice 1" || c === "a");
-        optBColIdx = columnsLower.findIndex((c) => c.includes("option b") || c === "option 2" || c === "choice 2" || c === "b");
-        optCColIdx = columnsLower.findIndex((c) => c.includes("option c") || c === "option 3" || c === "choice 3" || c === "c");
-        optDColIdx = columnsLower.findIndex((c) => c.includes("option d") || c === "option 4" || c === "choice 4" || c === "d");
-        correctColIdx = columnsLower.findIndex((c) => c.includes("correct") || c.includes("answer"));
-        imageColIdx = columnsLower.findIndex((c) => c.includes("image") || c.includes("img") || c.includes("picture"));
-        timeLimitColIdx = columnsLower.findIndex((c) => c.includes("time") || c.includes("timer") || c.includes("limit"));
+        questionColIdx = columnsLower.findIndex(
+          (c) => c.includes("question") || c.includes("prompt"),
+        );
+        optAColIdx = columnsLower.findIndex(
+          (c) =>
+            c.includes("option a") ||
+            c === "option 1" ||
+            c === "choice 1" ||
+            c === "a",
+        );
+        optBColIdx = columnsLower.findIndex(
+          (c) =>
+            c.includes("option b") ||
+            c === "option 2" ||
+            c === "choice 2" ||
+            c === "b",
+        );
+        optCColIdx = columnsLower.findIndex(
+          (c) =>
+            c.includes("option c") ||
+            c === "option 3" ||
+            c === "choice 3" ||
+            c === "c",
+        );
+        optDColIdx = columnsLower.findIndex(
+          (c) =>
+            c.includes("option d") ||
+            c === "option 4" ||
+            c === "choice 4" ||
+            c === "d",
+        );
+        correctColIdx = columnsLower.findIndex(
+          (c) => c.includes("correct") || c.includes("answer"),
+        );
+        imageColIdx = columnsLower.findIndex(
+          (c) =>
+            c.includes("image") || c.includes("img") || c.includes("picture"),
+        );
+        timeLimitColIdx = columnsLower.findIndex(
+          (c) =>
+            c.includes("time") || c.includes("timer") || c.includes("limit"),
+        );
         pointsColIdx = columnsLower.findIndex((c) => c.includes("point"));
-        explanationColIdx = columnsLower.findIndex((c) => c.includes("explain"));
+        explanationColIdx = columnsLower.findIndex((c) =>
+          c.includes("explain"),
+        );
         continue; // Skip header row
       }
 
       // If no explicit header row was present before first data row
       if (!hasHeader && questionColIdx === -1) {
-        const isCol0QuizTitle = columns.length >= 7 && (
-          columnsLower[0].includes("quiz") ||
-          (!columns[0].includes("?") && (
-            columnsLower[1].includes("what") ||
-            columnsLower[1].includes("how") ||
-            columnsLower[1].includes("which") ||
-            columnsLower[1].includes("who") ||
-            columnsLower[1].includes("is") ||
-            columns[1].endsWith("?")
-          ))
-        );
+        const isCol0QuizTitle =
+          columns.length >= 7 &&
+          (columnsLower[0].includes("quiz") ||
+            (!columns[0].includes("?") &&
+              (columnsLower[1].includes("what") ||
+                columnsLower[1].includes("how") ||
+                columnsLower[1].includes("which") ||
+                columnsLower[1].includes("who") ||
+                columnsLower[1].includes("is") ||
+                columns[1].endsWith("?"))));
 
         if (isCol0QuizTitle) {
           quizTitleColIdx = 0;
@@ -376,7 +417,12 @@ export default function HostDashboard() {
           .filter(Boolean);
       } else {
         const startOpt = qIdx + 1;
-        rawOptionTexts = [columns[startOpt], columns[startOpt + 1], columns[startOpt + 2], columns[startOpt + 3]]
+        rawOptionTexts = [
+          columns[startOpt],
+          columns[startOpt + 1],
+          columns[startOpt + 2],
+          columns[startOpt + 3],
+        ]
           .map((opt) => (opt || "").trim())
           .filter(Boolean);
       }
@@ -388,7 +434,8 @@ export default function HostDashboard() {
       }
 
       // Determine Correct Option Index
-      const cCol = correctColIdx !== -1 ? correctColIdx : (qIdx + rawOptionTexts.length + 1);
+      const cCol =
+        correctColIdx !== -1 ? correctColIdx : qIdx + rawOptionTexts.length + 1;
       const correctVal = (columns[cCol] || "").toUpperCase().trim();
       let correctIdx = 0;
 
@@ -417,18 +464,19 @@ export default function HostDashboard() {
 
       // Parse Optional Image Column & Convert Google Drive Links
       let imageUrl: string | null = null;
-      const imgCol = imageColIdx !== -1 ? imageColIdx : (cCol + 1);
+      const imgCol = imageColIdx !== -1 ? imageColIdx : cCol + 1;
       if (columns[imgCol]) {
         imageUrl = formatImageUrl(columns[imgCol]);
       }
 
       // Parse Time Limit, Points, Explanation
-      const tCol = timeLimitColIdx !== -1 ? timeLimitColIdx : (imgCol + 1);
-      const pCol = pointsColIdx !== -1 ? pointsColIdx : (tCol + 1);
-      const eCol = explanationColIdx !== -1 ? explanationColIdx : (pCol + 1);
+      const tCol = timeLimitColIdx !== -1 ? timeLimitColIdx : imgCol + 1;
+      const pCol = pointsColIdx !== -1 ? pointsColIdx : tCol + 1;
+      const eCol = explanationColIdx !== -1 ? explanationColIdx : pCol + 1;
 
       const timeLimitVal = columns[tCol] ? parseInt(columns[tCol]) : 20;
-      const timeLimit = isNaN(timeLimitVal) || !timeLimitVal ? 20 : timeLimitVal;
+      const timeLimit =
+        isNaN(timeLimitVal) || !timeLimitVal ? 20 : timeLimitVal;
 
       const pointsVal = columns[pCol] ? parseInt(columns[pCol]) : 100;
       const points = isNaN(pointsVal) || !pointsVal ? 100 : pointsVal;
@@ -478,6 +526,10 @@ export default function HostDashboard() {
     setImportStage("uploading");
     setImportProgress(25);
 
+    const finalTitle =
+      importedQuizTitle.trim() ||
+      deriveQuizTitleFromFilename(selectedFile.name);
+
     try {
       await new Promise((r) => setTimeout(r, 400));
       setImportStage("parsing");
@@ -486,10 +538,8 @@ export default function HostDashboard() {
       const text = await selectedFile.text();
       const parsed = parseCSVText(text);
 
-      let finalTitle =
-        importedQuizTitle.trim() ||
-        parsed.extractedQuizTitle ||
-        deriveQuizTitleFromFilename(selectedFile.name);
+      const effectiveTitle =
+        importedQuizTitle.trim() || parsed.extractedQuizTitle || finalTitle;
 
       await new Promise((r) => setTimeout(r, 400));
       setImportStage("validating");
@@ -504,7 +554,7 @@ export default function HostDashboard() {
       await apiRequest("/quizzes", {
         method: "POST",
         body: JSON.stringify({
-          title: finalTitle,
+          title: effectiveTitle,
           description: `Imported from CSV file (${selectedFile.name}) containing ${parsed.questions.length} questions.`,
           isPublic: true,
           questions: parsed.questions,
@@ -514,7 +564,7 @@ export default function HostDashboard() {
       setImportProgress(100);
       setImportStage("success");
       setImportReport({
-        title: finalTitle,
+        title: effectiveTitle,
         imported: parsed.questions.length,
         skipped: parsed.skipped,
         errors: parsed.errors,
@@ -688,7 +738,9 @@ export default function HostDashboard() {
               variant="ghost"
               size="sm"
               onClick={() => router.push("/admin/operations")}
-              leftIcon={<Activity className="w-4 h-4 text-emerald-400 shrink-0" />}
+              leftIcon={
+                <Activity className="w-4 h-4 text-emerald-400 shrink-0" />
+              }
             >
               <span className="hidden sm:inline">SRE Ops</span>
               <span className="sm:hidden">Ops</span>

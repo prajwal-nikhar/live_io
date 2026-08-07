@@ -236,12 +236,18 @@ function PlayerRoomContent() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [sessionState, hasAnswered, currentQuestion]);
 
-  // Local second countdown
+  // Local second countdown: lock option choices when timer reaches 0
   useEffect(() => {
     if (sessionState !== "QUESTION_ACTIVE" || remainingSeconds <= 0) return;
 
     const timer = setInterval(() => {
-      setRemainingSeconds((prev) => Math.max(0, prev - 1));
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          setHasAnswered(true);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
@@ -408,10 +414,14 @@ function PlayerRoomContent() {
                   {currentQuestion.imageUrl && (
                     <div className="flex justify-center pt-1">
                       <img
-                        src={formatImageUrl(currentQuestion.imageUrl) || currentQuestion.imageUrl}
+                        src={
+                          formatImageUrl(currentQuestion.imageUrl) ||
+                          currentQuestion.imageUrl
+                        }
                         alt="Question graphic"
                         onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = "none";
+                          (e.currentTarget as HTMLElement).style.display =
+                            "none";
                         }}
                         className="max-h-32 sm:max-h-48 rounded-xl object-contain border border-slate-800 bg-slate-950 p-1 shadow-lg"
                       />
@@ -540,7 +550,13 @@ function PlayerRoomContent() {
 
 export default function PlayerRoom() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading room...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
+          Loading room...
+        </div>
+      }
+    >
       <PlayerRoomContent />
     </Suspense>
   );

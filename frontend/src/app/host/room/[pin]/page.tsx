@@ -177,12 +177,20 @@ export default function HostRoom() {
     };
   }, [pin]);
 
-  // Local second countdown
+  // Local second countdown with automatic showAnswer fallback when timer hits 0
   useEffect(() => {
     if (sessionState !== "QUESTION_ACTIVE" || remainingSeconds <= 0) return;
 
     const timer = setInterval(() => {
-      setRemainingSeconds((prev) => Math.max(0, prev - 1));
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          setTimeout(() => {
+            handleShowAnswer();
+          }, 300);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
     return () => clearInterval(timer);
@@ -327,7 +335,9 @@ export default function HostRoom() {
           </Button>
           <span className="text-slate-300 text-xs flex items-center gap-1.5 font-bold shrink-0">
             <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>{players.length} <span className="hidden xs:inline">Joined</span></span>
+            <span>
+              {players.length} <span className="hidden xs:inline">Joined</span>
+            </span>
           </span>
           <Button
             variant="secondary"
@@ -478,10 +488,14 @@ export default function HostRoom() {
                   {currentQuestion.imageUrl && (
                     <div className="my-3 flex justify-center">
                       <img
-                        src={formatImageUrl(currentQuestion.imageUrl) || currentQuestion.imageUrl}
+                        src={
+                          formatImageUrl(currentQuestion.imageUrl) ||
+                          currentQuestion.imageUrl
+                        }
                         alt="Question graphic"
                         onError={(e) => {
-                          (e.currentTarget as HTMLElement).style.display = "none";
+                          (e.currentTarget as HTMLElement).style.display =
+                            "none";
                         }}
                         className="max-h-52 rounded-2xl object-contain border border-slate-800 bg-slate-950 p-2 shadow-2xl"
                       />
@@ -497,28 +511,36 @@ export default function HostRoom() {
                         label: "🔴 ▲",
                         color:
                           "bg-rose-600/90 border-rose-500/80 text-white shadow-rose-600/20",
-                        icon: <Triangle className="w-5 h-5 fill-current shrink-0" />,
+                        icon: (
+                          <Triangle className="w-5 h-5 fill-current shrink-0" />
+                        ),
                         barBg: "bg-rose-400",
                       },
                       {
                         label: "🔵 ◆",
                         color:
                           "bg-blue-600/90 border-blue-500/80 text-white shadow-blue-600/20",
-                        icon: <Diamond className="w-5 h-5 fill-current shrink-0" />,
+                        icon: (
+                          <Diamond className="w-5 h-5 fill-current shrink-0" />
+                        ),
                         barBg: "bg-blue-400",
                       },
                       {
                         label: "🟡 ●",
                         color:
                           "bg-amber-500/90 border-amber-400/80 text-slate-950 shadow-amber-500/20",
-                        icon: <Circle className="w-5 h-5 fill-current shrink-0" />,
+                        icon: (
+                          <Circle className="w-5 h-5 fill-current shrink-0" />
+                        ),
                         barBg: "bg-amber-300",
                       },
                       {
                         label: "🟢 ■",
                         color:
                           "bg-emerald-600/90 border-emerald-500/80 text-white shadow-emerald-600/20",
-                        icon: <Square className="w-5 h-5 fill-current shrink-0" />,
+                        icon: (
+                          <Square className="w-5 h-5 fill-current shrink-0" />
+                        ),
                         barBg: "bg-emerald-400",
                       },
                     ];
@@ -590,11 +612,19 @@ export default function HostRoom() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="sm" onClick={handleSkipQuestion}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleSkipQuestion}
+                    >
                       <FastForward className="w-4 h-4 mr-1.5 text-amber-400" />{" "}
                       Skip Question
                     </Button>
-                    <Button variant="primary" size="sm" onClick={handleShowAnswer}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleShowAnswer}
+                    >
                       <Eye className="w-4 h-4 mr-1.5" /> Show Statistics
                     </Button>
                   </div>

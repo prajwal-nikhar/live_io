@@ -137,14 +137,23 @@ export const apiRequest = async (
   return response.json();
 };
 
-export const formatImageUrl = (url: string | null | undefined): string | null => {
+export const formatImageUrl = (
+  url: string | null | undefined,
+): string | null => {
   if (!url) return null;
   let trimmed = url.trim();
-  if (!trimmed || trimmed.toLowerCase() === "(blank)" || trimmed.toLowerCase() === "blank") {
+  if (
+    !trimmed ||
+    trimmed.toLowerCase() === "(blank)" ||
+    trimmed.toLowerCase() === "blank"
+  ) {
     return null;
   }
 
-  if (trimmed.includes("drive.google.com") || trimmed.includes("docs.google.com")) {
+  if (
+    trimmed.includes("drive.google.com") ||
+    trimmed.includes("docs.google.com")
+  ) {
     const fileIdMatch =
       trimmed.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) ||
       trimmed.match(/[?&]id=([a-zA-Z0-9_-]+)/) ||

@@ -62,6 +62,13 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private metricsService: MetricsService,
   ) {}
 
+  afterInit(server: Server) {
+    this.roomService.setServer(server);
+    this.logger.log(
+      "[RoomGateway] Server instance bound to RoomService for auto-timers.",
+    );
+  }
+
   private parsePayload(data: any): any {
     if (!data) return {};
     if (typeof data === "string") {
