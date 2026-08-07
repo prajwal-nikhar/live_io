@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getSocket, emitWithTimeout, disconnectSocket } from "@/lib/socket";
-import { getBackendUrl } from "@/lib/api";
+import { getBackendUrl, formatImageUrl } from "@/lib/api";
 import {
   Users,
   Play,
@@ -478,7 +478,7 @@ export default function HostRoom() {
                   {currentQuestion.imageUrl && (
                     <div className="my-3 flex justify-center">
                       <img
-                        src={currentQuestion.imageUrl}
+                        src={formatImageUrl(currentQuestion.imageUrl) || currentQuestion.imageUrl}
                         alt="Question graphic"
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = "none";

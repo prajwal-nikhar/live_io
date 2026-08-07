@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, formatImageUrl } from "@/lib/api";
 import { emitWithTimeout } from "@/lib/socket";
 import {
   Sparkles,
@@ -252,14 +252,22 @@ export default function HostDashboard() {
 
   const parseCSVText = (
     text: string,
-  ): { questions: any[]; skipped: number; errors: string[] } => {
+  ): { questions: any[]; skipped: number; errors: string[]; extractedQuizTitle?: string } => {
     const normalizedText = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     const lines = normalizedText.split("\n");
     const questions: any[] = [];
     const errors: string[] = [];
     let skipped = 0;
+    let extractedQuizTitle: string | undefined = undefined;
 
-    let headerCols: string[] = [];
+    let hasHeader = false;
+    let quizTitleColIdx = -1;
+    let questionColIdx = -1;
+    let optAColIdx = -1;
+    let optBColIdx = -1;
+    let optCColIdx = -1;
+    let optDColIdx = -1;
+    let correctColIdx = -1;
     let imageColIdx = -1;
     let timeLimitColIdx = -1;
     let pointsColIdx = -1;
@@ -275,35 +283,103 @@ export default function HostDashboard() {
         continue;
       }
 
-      const firstCol = columns[0].toLowerCase();
-      if (
-        firstCol.startsWith("question") ||
-        firstCol.startsWith("prompt") ||
-        firstCol === "question text"
-      ) {
-        // Detect column positions from header row if available
-        headerCols = columns.map((c) => c.toLowerCase());
-        imageColIdx = headerCols.findIndex(
-          (c) => c === "image" || c === "imageurl" || c === "img" || c === "picture",
-        );
-        timeLimitColIdx = headerCols.findIndex(
-          (c) => c.includes("time") || c.includes("timer") || c.includes("limit"),
-        );
-        pointsColIdx = headerCols.findIndex((c) => c.includes("point"));
-        explanationColIdx = headerCols.findIndex((c) => c.includes("explain"));
-        continue; // Skip Header Line
+      const columnsLower = columns.map((c) => c.toLowerCase());
+
+      // Check header row
+      const isHeaderRow = columnsLower.some((c) =>
+        c.includes("quiz title") ||
+        c.includes("question") ||
+        c.includes("prompt") ||
+        c.includes("option a") ||
+        c.includes("correct")
+      );
+
+      if (isHeaderRow && !hasHeader) {
+        hasHeader = true;
+        quizTitleColIdx = columnsLower.findIndex((c) => c.includes("quiz"));
+        questionColIdx = columnsLower.findIndex((c) => c.includes("question") || c.includes("prompt"));
+        optAColIdx = columnsLower.findIndex((c) => c.includes("option a") || c === "option 1" || c === "choice 1" || c === "a");
+        optBColIdx = columnsLower.findIndex((c) => c.includes("option b") || c === "option 2" || c === "choice 2" || c === "b");
+        optCColIdx = columnsLower.findIndex((c) => c.includes("option c") || c === "option 3" || c === "choice 3" || c === "c");
+        optDColIdx = columnsLower.findIndex((c) => c.includes("option d") || c === "option 4" || c === "choice 4" || c === "d");
+        correctColIdx = columnsLower.findIndex((c) => c.includes("correct") || c.includes("answer"));
+        imageColIdx = columnsLower.findIndex((c) => c.includes("image") || c.includes("img") || c.includes("picture"));
+        timeLimitColIdx = columnsLower.findIndex((c) => c.includes("time") || c.includes("timer") || c.includes("limit"));
+        pointsColIdx = columnsLower.findIndex((c) => c.includes("point"));
+        explanationColIdx = columnsLower.findIndex((c) => c.includes("explain"));
+        continue; // Skip header row
       }
 
-      const questionText = columns[0];
+      // If no explicit header row was present before first data row
+      if (!hasHeader && questionColIdx === -1) {
+        const isCol0QuizTitle = columns.length >= 7 && (
+          columnsLower[0].includes("quiz") ||
+          (!columns[0].includes("?") && (
+            columnsLower[1].includes("what") ||
+            columnsLower[1].includes("how") ||
+            columnsLower[1].includes("which") ||
+            columnsLower[1].includes("who") ||
+            columnsLower[1].includes("is") ||
+            columns[1].endsWith("?")
+          ))
+        );
+
+        if (isCol0QuizTitle) {
+          quizTitleColIdx = 0;
+          questionColIdx = 1;
+          optAColIdx = 2;
+          optBColIdx = 3;
+          optCColIdx = 4;
+          optDColIdx = 5;
+          correctColIdx = 6;
+          imageColIdx = 7;
+          timeLimitColIdx = 8;
+          pointsColIdx = 9;
+          explanationColIdx = 10;
+        } else {
+          questionColIdx = 0;
+          optAColIdx = 1;
+          optBColIdx = 2;
+          optCColIdx = 3;
+          optDColIdx = 4;
+          correctColIdx = 5;
+          imageColIdx = 6;
+          timeLimitColIdx = 7;
+          pointsColIdx = 8;
+          explanationColIdx = 9;
+        }
+      }
+
+      // Extract Quiz Title if present in CSV row
+      if (quizTitleColIdx !== -1 && columns[quizTitleColIdx]) {
+        const titleVal = columns[quizTitleColIdx].trim();
+        if (titleVal && !extractedQuizTitle) {
+          extractedQuizTitle = titleVal;
+        }
+      }
+
+      // Extract Question Text
+      const qIdx = questionColIdx !== -1 ? questionColIdx : 0;
+      const questionText = columns[qIdx];
       if (!questionText) {
         errors.push(`Row ${i + 1}: Missing question prompt`);
         skipped++;
         continue;
       }
 
-      const rawOptionTexts = [columns[1], columns[2], columns[3], columns[4]]
-        .map((opt) => (opt || "").trim())
-        .filter(Boolean);
+      // Extract Option Texts
+      let rawOptionTexts: string[] = [];
+      if (optAColIdx !== -1 && optAColIdx < columns.length) {
+        const optionCols = [optAColIdx, optBColIdx, optCColIdx, optDColIdx];
+        rawOptionTexts = optionCols
+          .map((col) => (col !== -1 && columns[col] ? columns[col].trim() : ""))
+          .filter(Boolean);
+      } else {
+        const startOpt = qIdx + 1;
+        rawOptionTexts = [columns[startOpt], columns[startOpt + 1], columns[startOpt + 2], columns[startOpt + 3]]
+          .map((opt) => (opt || "").trim())
+          .filter(Boolean);
+      }
 
       if (rawOptionTexts.length < 2) {
         errors.push(`Row ${i + 1}: Question requires at least 2 choices`);
@@ -311,7 +387,9 @@ export default function HostDashboard() {
         continue;
       }
 
-      const correctVal = (columns[5] || "").toUpperCase().trim();
+      // Determine Correct Option Index
+      const cCol = correctColIdx !== -1 ? correctColIdx : (qIdx + rawOptionTexts.length + 1);
+      const correctVal = (columns[cCol] || "").toUpperCase().trim();
       let correctIdx = 0;
 
       if (correctVal === "A" || correctVal === "1") correctIdx = 0;
@@ -337,59 +415,25 @@ export default function HostDashboard() {
         isCorrect: idx === correctIdx,
       }));
 
-      // Parse Optional Image Column
+      // Parse Optional Image Column & Convert Google Drive Links
       let imageUrl: string | null = null;
-      if (imageColIdx !== -1 && columns[imageColIdx]) {
-        const val = columns[imageColIdx].trim();
-        if (val && val.toLowerCase() !== "(blank)" && val.toLowerCase() !== "blank") {
-          imageUrl = val;
-        }
-      } else if (columns[6]) {
-        // Fallback positional check if column 6 is an image path/URL or if columns[6] is non-numeric
-        const col6Val = columns[6].trim();
-        if (
-          col6Val &&
-          col6Val.toLowerCase() !== "(blank)" &&
-          col6Val.toLowerCase() !== "blank" &&
-          (col6Val.startsWith("http") ||
-            col6Val.startsWith("/") ||
-            col6Val.startsWith("data:") ||
-            /\.(png|jpg|jpeg|gif|webp|svg)/i.test(col6Val) ||
-            isNaN(Number(col6Val)))
-        ) {
-          imageUrl = col6Val;
-        }
+      const imgCol = imageColIdx !== -1 ? imageColIdx : (cCol + 1);
+      if (columns[imgCol]) {
+        imageUrl = formatImageUrl(columns[imgCol]);
       }
 
-      // Parse TimeLimit, Points, Explanation
-      const timeLimitVal =
-        timeLimitColIdx !== -1 && columns[timeLimitColIdx]
-          ? parseInt(columns[timeLimitColIdx])
-          : imageColIdx !== -1 && columns[6]
-            ? parseInt(columns[6])
-            : imageUrl && columns[7]
-              ? parseInt(columns[7])
-              : parseInt(columns[6]);
+      // Parse Time Limit, Points, Explanation
+      const tCol = timeLimitColIdx !== -1 ? timeLimitColIdx : (imgCol + 1);
+      const pCol = pointsColIdx !== -1 ? pointsColIdx : (tCol + 1);
+      const eCol = explanationColIdx !== -1 ? explanationColIdx : (pCol + 1);
+
+      const timeLimitVal = columns[tCol] ? parseInt(columns[tCol]) : 20;
       const timeLimit = isNaN(timeLimitVal) || !timeLimitVal ? 20 : timeLimitVal;
 
-      const pointsVal =
-        pointsColIdx !== -1 && columns[pointsColIdx]
-          ? parseInt(columns[pointsColIdx])
-          : imageColIdx !== -1 && columns[7]
-            ? parseInt(columns[7])
-            : imageUrl && columns[8]
-              ? parseInt(columns[8])
-              : parseInt(columns[7]);
+      const pointsVal = columns[pCol] ? parseInt(columns[pCol]) : 100;
       const points = isNaN(pointsVal) || !pointsVal ? 100 : pointsVal;
 
-      const explanation =
-        explanationColIdx !== -1 && columns[explanationColIdx]
-          ? columns[explanationColIdx]
-          : imageColIdx !== -1 && columns[8]
-            ? columns[8]
-            : imageUrl && columns[9]
-              ? columns[9]
-              : columns[8] || "";
+      const explanation = columns[eCol] || "";
 
       questions.push({
         text: questionText,
@@ -402,7 +446,7 @@ export default function HostDashboard() {
       });
     }
 
-    return { questions, skipped, errors };
+    return { questions, skipped, errors, extractedQuizTitle };
   };
 
   // CSV File Selection Trigger (Drag & Drop or Browse)
@@ -431,9 +475,6 @@ export default function HostDashboard() {
   const handleConfirmImport = async () => {
     if (!selectedFile) return;
 
-    const finalTitle =
-      importedQuizTitle.trim() ||
-      deriveQuizTitleFromFilename(selectedFile.name);
     setImportStage("uploading");
     setImportProgress(25);
 
@@ -444,6 +485,11 @@ export default function HostDashboard() {
 
       const text = await selectedFile.text();
       const parsed = parseCSVText(text);
+
+      let finalTitle =
+        importedQuizTitle.trim() ||
+        parsed.extractedQuizTitle ||
+        deriveQuizTitleFromFilename(selectedFile.name);
 
       await new Promise((r) => setTimeout(r, 400));
       setImportStage("validating");

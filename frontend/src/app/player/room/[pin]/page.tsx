@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { getSocket, emitWithTimeout, disconnectSocket } from "@/lib/socket";
+import { formatImageUrl } from "@/lib/api";
 import {
   Smile,
   Award,
@@ -407,7 +408,7 @@ function PlayerRoomContent() {
                   {currentQuestion.imageUrl && (
                     <div className="flex justify-center pt-1">
                       <img
-                        src={currentQuestion.imageUrl}
+                        src={formatImageUrl(currentQuestion.imageUrl) || currentQuestion.imageUrl}
                         alt="Question graphic"
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = "none";

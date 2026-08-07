@@ -608,15 +608,19 @@ export class RoomService {
     }
 
     let isCorrect = "false";
+    const isOptCorrect = (o: any) =>
+      o &&
+      (o.isCorrect === true ||
+        o.isCorrect === "true" ||
+        String(o.isCorrect).toLowerCase() === "true");
+
     if (question.type === "MULTIPLE_CHOICE" || question.type === "TRUE_FALSE") {
       const selectedOption = question.options.find((o) => o.id === optionId);
-      if (selectedOption && selectedOption.isCorrect === "true") {
+      if (selectedOption && isOptCorrect(selectedOption)) {
         isCorrect = "true";
       }
     } else if (question.type === "OPEN_TEXT") {
-      const correctOption = question.options.find(
-        (o) => o.isCorrect === "true",
-      );
+      const correctOption = question.options.find((o) => isOptCorrect(o));
       if (
         correctOption &&
         textResponse &&
