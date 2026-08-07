@@ -191,6 +191,12 @@ function PlayerRoomContent() {
         setLeaderboard(deduplicateLeaderboard(data.leaderboard));
     });
 
+    socket.on("show_answer", (data: any) => {
+      setSessionState("ANSWER_REVEAL");
+      if (data.leaderboard)
+        setLeaderboard(deduplicateLeaderboard(data.leaderboard));
+    });
+
     socket.on("quiz:finished", (data: any) => {
       setSessionState("QUIZ_FINISHED");
       if (data.leaderboard)
@@ -209,6 +215,7 @@ function PlayerRoomContent() {
       socket.off("quiz_started");
       socket.off("question:skip");
       socket.off("answer:reveal");
+      socket.off("show_answer");
       socket.off("quiz:finished");
     };
   }, [pin, queryName, router]);
@@ -469,36 +476,77 @@ function PlayerRoomContent() {
               </motion.div>
             )}
 
-          {!reconnectError && sessionState === "ANSWER_REVEAL" && (
-            <motion.div
-              key="reveal"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center space-y-6 w-full"
-            >
-              {answerResult?.isCorrect ? (
-                <div className="p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
-                  <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto" />
-                  <h3 className="text-3xl font-black text-emerald-400">
-                    Correct Answer!
-                  </h3>
-                  <p className="text-xl font-black text-white">
-                    +{answerResult.pointsEarned || 1000} Points
-                  </p>
-                </div>
-              ) : (
-                <div className="p-8 bg-rose-500/10 border border-rose-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
-                  <XCircle className="w-16 h-16 text-rose-400 mx-auto" />
-                  <h3 className="text-3xl font-black text-rose-400">
-                    Incorrect!
-                  </h3>
-                  <p className="text-xs text-slate-400">
-                    Better luck on the next question.
-                  </p>
-                </div>
-              )}
-            </motion.div>
-          )}
+          {!reconnectError &&
+            (sessionState === "ANSWER_REVEAL" ||
+              sessionState === "QUESTION_LOCKED") && (
+              <motion.div
+                key="reveal"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6 w-full"
+              >
+                {(() => {
+                  const didAnswer = Boolean(
+                    selectedOptionId ||
+                    (answerResult && !answerResult.duplicate),
+                  );
+                  const isCorrectAnswer = answerResult
+                    ? Boolean(answerResult.isCorrect)
+                    : Boolean(
+                        selectedOptionId &&
+                        currentQuestion?.options?.find(
+                          (o: any) =>
+                            o.id === selectedOptionId &&
+                            (o.isCorrect === true || o.isCorrect === "true"),
+                        ),
+                      );
+
+                  if (!didAnswer) {
+                    return (
+                      <div className="p-8 bg-amber-500/10 border border-amber-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
+                        <Clock className="w-16 h-16 text-amber-400 mx-auto animate-pulse" />
+                        <h3 className="text-3xl font-black text-amber-400">
+                          You Didn't Answer
+                        </h3>
+                        <p className="text-xs text-slate-400">
+                          Time ran out before you selected an option.
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  if (isCorrectAnswer) {
+                    return (
+                      <div className="p-8 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
+                        <CheckCircle className="w-16 h-16 text-emerald-400 mx-auto" />
+                        <h3 className="text-3xl font-black text-emerald-400">
+                          Correct Answer!
+                        </h3>
+                        <p className="text-xl font-black text-white">
+                          +
+                          {answerResult?.pointsEarned ||
+                            currentQuestion?.points ||
+                            100}{" "}
+                          Points
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="p-8 bg-rose-500/10 border border-rose-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
+                      <XCircle className="w-16 h-16 text-rose-400 mx-auto" />
+                      <h3 className="text-3xl font-black text-rose-400">
+                        Incorrect!
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Better luck on the next question.
+                      </p>
+                    </div>
+                  );
+                })()}
+              </motion.div>
+            )}
 
           {!reconnectError && sessionState === "QUIZ_FINISHED" && (
             <motion.div
