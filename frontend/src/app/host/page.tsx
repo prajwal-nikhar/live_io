@@ -22,14 +22,11 @@ import {
   Download,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
-  Users,
   Trophy,
-  Award,
   Clock,
   FileText,
-  ArrowUpDown,
   Filter,
+  RotateCcw,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/Button";
@@ -38,6 +35,38 @@ import { Badge } from "@/components/ui/Badge";
 import { Input } from "@/components/ui/Input";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SkeletonLoader } from "@/components/ui/SkeletonLoader";
+
+/**
+ * Derives a clean, readable quiz title from an uploaded CSV filename.
+ * Rules:
+ * - Remove extension (.csv, etc.)
+ * - Replace underscores (_) and hyphens (-) with spaces
+ * - Collapse multiple spaces into one
+ * - Trim whitespace
+ * - Max length 80 chars
+ */
+function deriveQuizTitleFromFilename(fileName: string): string {
+  if (!fileName) return "Quiz Import Template";
+
+  // 1. Remove extension
+  let nameWithoutExt = fileName.replace(/\.[^/.]+$/, "");
+
+  // 2. Replace underscores and hyphens with spaces
+  let formatted = nameWithoutExt.replace(/[_]/g, " ").replace(/[-]/g, " ");
+
+  // 3. Collapse multiple spaces into one
+  formatted = formatted.replace(/\s+/g, " ");
+
+  // 4. Trim leading/trailing whitespace
+  formatted = formatted.trim();
+
+  // 5. Limit to 80 characters max
+  if (formatted.length > 80) {
+    formatted = formatted.substring(0, 80).trim();
+  }
+
+  return formatted || "Quiz Import Template";
+}
 
 export default function HostDashboard() {
   const router = useRouter();
@@ -63,7 +92,7 @@ export default function HostDashboard() {
     "all" | "public" | "private" | "ai" | "imported"
   >("all");
 
-  // New Quiz state
+  // New Manual Quiz state
   const [newTitle, setNewTitle] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [isPublic, setIsPublic] = useState(true);
@@ -76,11 +105,19 @@ export default function HostDashboard() {
   // CSV Import states
   const [isDragging, setIsDragging] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importedQuizTitle, setImportedQuizTitle] = useState<string>("");
   const [importProgress, setImportProgress] = useState<number>(0);
   const [importStage, setImportStage] = useState<
-    "idle" | "uploading" | "parsing" | "validating" | "success" | "error"
+    | "idle"
+    | "selected"
+    | "uploading"
+    | "parsing"
+    | "validating"
+    | "success"
+    | "error"
   >("idle");
   const [importReport, setImportReport] = useState<{
+    title: string;
     imported: number;
     skipped: number;
     errors: string[];
@@ -301,14 +338,35 @@ export default function HostDashboard() {
     return { questions, skipped, errors };
   };
 
-  // CSV Drag and Drop & Upload Handler
-  const handleFileProcess = async (file: File) => {
+  // CSV File Selection Trigger (Drag & Drop or Browse)
+  const handleFileSelect = (file: File) => {
     if (!file.name.endsWith(".csv")) {
       alert("Please select a valid .csv file (e.g. Quiz_Import_Template.csv)");
       return;
     }
 
+    const titleFromFilename = deriveQuizTitleFromFilename(file.name);
     setSelectedFile(file);
+    setImportedQuizTitle(titleFromFilename);
+    setImportStage("selected");
+    setImportReport(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  // Confirm Import & Save Quiz
+  const handleConfirmImport = async () => {
+    if (!selectedFile) return;
+
+    const finalTitle =
+      importedQuizTitle.trim() ||
+      deriveQuizTitleFromFilename(selectedFile.name);
     setImportStage("uploading");
     setImportProgress(25);
 
@@ -317,7 +375,7 @@ export default function HostDashboard() {
       setImportStage("parsing");
       setImportProgress(60);
 
-      const text = await file.text();
+      const text = await selectedFile.text();
       const parsed = parseCSVText(text);
 
       await new Promise((r) => setTimeout(r, 400));
@@ -330,12 +388,11 @@ export default function HostDashboard() {
         );
       }
 
-      // Save imported quiz to host library
       await apiRequest("/quizzes", {
         method: "POST",
         body: JSON.stringify({
-          title: `Imported: ${file.name.replace(/\.[^/.]+$/, "")}`,
-          description: `Imported from CSV file containing ${parsed.questions.length} questions.`,
+          title: finalTitle,
+          description: `Imported from CSV file (${selectedFile.name}) containing ${parsed.questions.length} questions.`,
           isPublic: true,
           questions: parsed.questions,
         }),
@@ -344,6 +401,7 @@ export default function HostDashboard() {
       setImportProgress(100);
       setImportStage("success");
       setImportReport({
+        title: finalTitle,
         imported: parsed.questions.length,
         skipped: parsed.skipped,
         errors: parsed.errors,
@@ -353,6 +411,7 @@ export default function HostDashboard() {
     } catch (err: any) {
       setImportStage("error");
       setImportReport({
+        title: finalTitle,
         imported: 0,
         skipped: 0,
         errors: [err.message || "Failed to process CSV file."],
@@ -360,12 +419,13 @@ export default function HostDashboard() {
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileProcess(e.dataTransfer.files[0]);
-    }
+  // Reset Import Card State
+  const handleResetImport = () => {
+    setSelectedFile(null);
+    setImportedQuizTitle("");
+    setImportStage("idle");
+    setImportProgress(0);
+    setImportReport(null);
   };
 
   // Export Quiz to CSV
@@ -443,7 +503,6 @@ export default function HostDashboard() {
     }
   };
 
-  // Total questions count across user bank
   const totalQuestionsCreated = quizzes.reduce(
     (acc, q) => acc + (q.questions?.length || 0),
     0,
@@ -464,7 +523,11 @@ export default function HostDashboard() {
         return q.isPublic === "false" || q.isPublic === false;
       if (filterChip === "ai") return q.title?.toLowerCase().includes("ai:");
       if (filterChip === "imported")
-        return q.title?.toLowerCase().includes("imported:");
+        return (
+          q.description?.toLowerCase().includes("imported from csv") ||
+          q.title?.toLowerCase().includes("quiz import") ||
+          q.title?.toLowerCase().includes("imported:")
+        );
       return true;
     })
     .sort((a, b) => {
@@ -546,14 +609,14 @@ export default function HostDashboard() {
             <Button
               size="sm"
               variant="primary"
-              onClick={() => window.scrollTo({ top: 400, behavior: "smooth" })}
+              onClick={() => window.scrollTo({ top: 380, behavior: "smooth" })}
             >
               <Plus className="w-4 h-4 mr-1" /> + New Quiz
             </Button>
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => window.scrollTo({ top: 400, behavior: "smooth" })}
+              onClick={() => window.scrollTo({ top: 380, behavior: "smooth" })}
             >
               <FileSpreadsheet className="w-4 h-4 mr-1 text-pink-400" /> Import
               CSV
@@ -561,7 +624,7 @@ export default function HostDashboard() {
             <Button
               size="sm"
               variant="glowing"
-              onClick={() => window.scrollTo({ top: 400, behavior: "smooth" })}
+              onClick={() => window.scrollTo({ top: 380, behavior: "smooth" })}
             >
               <Bot className="w-4 h-4 mr-1 text-cyan-400" /> Generate AI Quiz
             </Button>
@@ -676,7 +739,7 @@ export default function HostDashboard() {
             </form>
           </Card>
 
-          {/* Card 2: Restored Enterprise CSV Import Dropzone */}
+          {/* Card 2: Restored CSV Import Card with Filename Auto-Title */}
           <Card
             variant="glass"
             className="p-5 flex flex-col justify-between space-y-4 relative overflow-hidden"
@@ -696,95 +759,174 @@ export default function HostDashboard() {
               </p>
             </div>
 
-            {/* Drag and Drop Zone */}
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`p-4 rounded-xl border-2 border-dashed text-center cursor-pointer transition-all ${
-                isDragging
-                  ? "border-pink-500 bg-pink-500/10"
-                  : "border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60"
-              }`}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) handleFileProcess(e.target.files[0]);
+            {/* IDLE Stage: Drag & Drop Dropzone */}
+            {importStage === "idle" && (
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
                 }}
-              />
-              <UploadCloud className="w-6 h-6 mx-auto text-pink-400 mb-1" />
-              <p className="text-xs font-bold text-slate-200">
-                {selectedFile ? selectedFile.name : "Drag & Drop CSV or Browse"}
-              </p>
-              <p className="text-[10px] text-slate-500 mt-0.5">
-                Supports Question, Option A-D, Correct Choice
-              </p>
-            </div>
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`p-4 rounded-xl border-2 border-dashed text-center cursor-pointer transition-all ${
+                  isDragging
+                    ? "border-pink-500 bg-pink-500/10"
+                    : "border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60"
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.[0])
+                      handleFileSelect(e.target.files[0]);
+                  }}
+                />
+                <UploadCloud className="w-6 h-6 mx-auto text-pink-400 mb-1" />
+                <p className="text-xs font-bold text-slate-200">
+                  Drag & Drop CSV or Browse
+                </p>
+                <p className="text-[10px] text-slate-500 mt-0.5">
+                  Title auto-derived from filename
+                </p>
+              </div>
+            )}
 
-            {/* Upload & Parsing Feedback Progress */}
-            {importStage !== "idle" && (
-              <div className="space-y-2">
+            {/* SELECTED Stage: Preview File & Editable derived Quiz Title */}
+            {importStage === "selected" && selectedFile && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-3"
+              >
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 truncate">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span className="font-bold text-slate-200 truncate">
+                      {selectedFile.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleResetImport}
+                    className="text-slate-500 hover:text-slate-300 text-[11px] font-semibold"
+                  >
+                    Change
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Quiz Title (Auto-derived):
+                  </label>
+                  <Input
+                    required
+                    value={importedQuizTitle}
+                    onChange={(e) => setImportedQuizTitle(e.target.value)}
+                    placeholder="Enter quiz title..."
+                  />
+                </div>
+
+                <Button
+                  variant="primary"
+                  className="w-full"
+                  onClick={handleConfirmImport}
+                >
+                  <UploadCloud className="w-4 h-4 mr-1" /> Import Quiz
+                </Button>
+              </motion.div>
+            )}
+
+            {/* UPLOADING / PARSING / VALIDATING Progress Stage */}
+            {(importStage === "uploading" ||
+              importStage === "parsing" ||
+              importStage === "validating") && (
+              <div className="space-y-2 py-2">
                 <div className="flex justify-between text-xs font-bold">
                   <span className="text-slate-300 capitalize">
                     {importStage}...
                   </span>
                   <span className="text-pink-400">{importProgress}%</span>
                 </div>
-                <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden border border-slate-800">
+                <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
                   <div
-                    className="bg-gradient-to-r from-pink-500 to-purple-500 h-full transition-all duration-300"
+                    className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 h-full transition-all duration-300"
                     style={{ width: `${importProgress}%` }}
                   />
                 </div>
               </div>
             )}
 
-            {/* Import Summary Report */}
-            {importReport && (
+            {/* SUCCESS Stage Confirmation Report */}
+            {importStage === "success" && importReport && (
               <AnimatePresence mode="wait">
                 <motion.div
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`p-3 rounded-xl border text-xs space-y-1 ${
-                    importStage === "error"
-                      ? "bg-rose-500/10 border-rose-500/20 text-rose-300"
-                      : "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
-                  }`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-2 text-emerald-300"
                 >
-                  <div className="flex items-center gap-1.5 font-bold">
-                    {importStage === "error" ? (
-                      <AlertCircle className="w-4 h-4" />
-                    ) : (
-                      <CheckCircle2 className="w-4 h-4" />
-                    )}
-                    <span>
-                      {importStage === "error"
-                        ? "Import Failed"
-                        : "Import Complete"}
-                    </span>
+                  <div className="flex items-center gap-1.5 font-bold text-sm text-emerald-400">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>Quiz Imported Successfully</span>
                   </div>
-                  <p>
-                    • Questions Imported:{" "}
-                    <strong>{importReport.imported}</strong>
-                  </p>
-                  <p>
-                    • Skipped Rows: <strong>{importReport.skipped}</strong>
-                  </p>
-                  {importReport.errors.length > 0 && (
-                    <p className="text-rose-400 font-semibold">
-                      • Error: {importReport.errors[0]}
+                  <div className="space-y-1 text-slate-200 border-t border-emerald-500/20 pt-2 font-medium">
+                    <p>
+                      Quiz Name:{" "}
+                      <strong className="text-white">
+                        {importReport.title}
+                      </strong>
                     </p>
-                  )}
+                    <p>
+                      Questions Imported:{" "}
+                      <strong className="text-emerald-400 font-bold">
+                        {importReport.imported}
+                      </strong>
+                    </p>
+                    <p>
+                      Skipped Rows:{" "}
+                      <strong className="text-slate-400 font-bold">
+                        {importReport.skipped}
+                      </strong>
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-full mt-2 text-xs text-slate-300 hover:text-white"
+                    onClick={handleResetImport}
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Import Another
+                    CSV
+                  </Button>
                 </motion.div>
               </AnimatePresence>
+            )}
+
+            {/* ERROR Stage Report */}
+            {importStage === "error" && importReport && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs space-y-2 text-rose-300"
+              >
+                <div className="flex items-center gap-1.5 font-bold text-sm text-rose-400">
+                  <AlertCircle className="w-5 h-5" />
+                  <span>Import Failed</span>
+                </div>
+                <p className="text-rose-300">
+                  {importReport.errors[0] || "Invalid CSV structure."}
+                </p>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-full mt-2 text-xs"
+                  onClick={handleResetImport}
+                >
+                  Try Again
+                </Button>
+              </motion.div>
             )}
           </Card>
 
