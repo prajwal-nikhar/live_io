@@ -121,6 +121,41 @@ export class MetricsService implements OnModuleInit {
   });
 
   // ==================================================================
+  // ANSWER PIPELINE TELEMETRY METRICS
+  // ==================================================================
+  public readonly answersReceivedTotal = new client.Counter({
+    name: "answers_received_total",
+    help: "Total player answer submission events received at gateway",
+  });
+
+  public readonly answersPersistedTotal = new client.Counter({
+    name: "answers_persisted_total",
+    help: "Total answer submissions successfully persisted to database",
+  });
+
+  public readonly answersAckTotal = new client.Counter({
+    name: "answers_ack_total",
+    help: "Total answer ACKs returned to client",
+  });
+
+  public readonly answersLateTotal = new client.Counter({
+    name: "answers_late_total",
+    help: "Total answer submissions received after question timeout",
+  });
+
+  public readonly answerProcessingDuration = new client.Histogram({
+    name: "answer_processing_duration_seconds",
+    help: "Total duration of player:answer processing pipeline in seconds",
+    buckets: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10],
+  });
+
+  public readonly answerDbDuration = new client.Histogram({
+    name: "answer_db_duration_seconds",
+    help: "Duration of database write operations for player:answer in seconds",
+    buckets: [0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+  });
+
+  // ==================================================================
   // DATABASE METRICS
   // ==================================================================
   public readonly dbLatencyHistogram = new client.Histogram({

@@ -588,14 +588,15 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
+    const pipelineStart = process.hrtime();
+    this.metricsService.answersReceivedTotal.inc();
+
     try {
       const dto = await this.validatePayload(SubmitAnswerDto, data);
       const { pin, playerId, questionId, optionId, textResponse } = dto;
       const sanitizedText = sanitizeInput(textResponse);
-      this.logger.log(
-        `[Answer Submission] Player ${playerId} question ${questionId} (Socket: ${client.id})`,
-      );
 
+      const dbStart = process.hrtime();
       const result = await this.roomService.submitResponse(
         pin,
         playerId,
@@ -603,11 +604,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         optionId,
         sanitizedText,
       );
+      const dbDiff = process.hrtime(dbStart);
+      const dbSec = dbDiff[0] + dbDiff[1] / 1e9;
+      this.metricsService.answerDbDuration.observe(dbSec);
 
       if (result.duplicate) {
+        this.metricsService.answersAckTotal.inc();
         client.emit("answer:acknowledged", { duplicate: true });
         return { success: true, data: { duplicate: true } };
       }
+
+      this.metricsService.answersPersistedTotal.inc();
 
       const responsePayload = {
         duplicate: false,
@@ -617,8 +624,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         newStreak: result.newStreak,
       };
 
+      this.metricsService.answersAckTotal.inc();
       client.emit("answer:acknowledged", responsePayload);
 
+      const broadcastStart = process.hrtime();
       const stats = await this.roomService.getQuestionStats(pin, questionId);
       const players = await this.roomService.getPlayers(pin);
       const progressPayload = {
@@ -630,8 +639,22 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.server.to(`host:${pin}`).emit("answer:progress", progressPayload);
       this.server.to(`room:${pin}`).emit("answer:progress", progressPayload);
 
+      const bDiff = process.hrtime(broadcastStart);
+      const bSec = bDiff[0] + bDiff[1] / 1e9;
+      this.metricsService.broadcastLatencyHistogram.observe(bSec);
+
+      const pipeDiff = process.hrtime(pipelineStart);
+      const pipeSec = pipeDiff[0] + pipeDiff[1] / 1e9;
+      this.metricsService.answerProcessingDuration.observe(pipeSec);
+
       return { success: true, data: responsePayload };
     } catch (error: any) {
+      if (error.message?.includes("Time limit expired")) {
+        this.metricsService.answersLateTotal.inc();
+      }
+      this.logger.warn(
+        `[Answer Pipeline Error] Socket ${client.id}: ${error.message}`,
+      );
       client.emit("error", {
         message: error.message || "Failed to submit answer",
       });
