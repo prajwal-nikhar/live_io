@@ -1,296 +1,268 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { emitWithTimeout } from '@/lib/socket';
-import { Sparkles, Play, Award, ShieldAlert, Monitor, CheckCircle, Moon, Sun } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  Sparkles,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Users,
+  Trophy,
+  Play,
+  Radio,
+  Lock,
+  Activity,
+  Layers,
+  CheckCircle2,
+} from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 
 export default function LandingPage() {
   const router = useRouter();
-  const [pin, setPin] = useState('');
-  const [nickname, setNickname] = useState('');
-  const [step, setStep] = useState<'PIN' | 'NICKNAME' | 'JOINING'>('PIN');
-  const [error, setError] = useState('');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme as any);
-    document.documentElement.className = savedTheme;
-
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const urlPin = params.get('pin');
-      if (urlPin && urlPin.trim().length === 6) {
-        setPin(urlPin);
-        setStep('NICKNAME');
-      }
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('theme', nextTheme);
-    document.documentElement.className = nextTheme;
-  };
+  const [pin, setPin] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [step, setStep] = useState<"pin" | "nickname">("pin");
+  const [error, setError] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!pin || pin.trim().length !== 6) {
-      setError('Please enter a valid 6-digit numeric game PIN');
+    if (!pin || pin.length < 6) {
+      setError("Please enter a valid 6-digit Game PIN");
       return;
     }
-    setError('');
-    setStep('NICKNAME');
+    setError("");
+    setStep("nickname");
   };
 
-  // Deterministic Join Flow using Socket.IO Acknowledgement Callbacks with 10s Timeout
-  const handleNicknameSubmit = async (e: React.FormEvent) => {
+  const handleJoinGame = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nickname || nickname.trim().length < 2) {
-      setError('Nickname must be at least 2 characters long');
+    if (!nickname.trim()) {
+      setError("Please enter a nickname");
       return;
     }
-
-    setError('');
-    setStep('JOINING');
-
-    const res = await emitWithTimeout('player:join', { pin, name: nickname }, 10000);
-
-    if (res.success && res.data?.player) {
-      const p = res.data.player;
-      sessionStorage.setItem('player_pin', pin);
-      sessionStorage.setItem('player_name', nickname);
-      sessionStorage.setItem('player_id', p.id);
-
-      localStorage.setItem(
-        `aura_quiz_player_${pin}`,
-        JSON.stringify({
-          pin,
-          playerId: p.id,
-          name: p.name,
-          reconnectToken: p.reconnectToken,
-        }),
-      );
-
-      router.push(`/player/room/${pin}`);
-    } else {
-      setError(res.message || 'Unable to join. Verify your PIN and try again.');
-      setStep('NICKNAME');
-    }
+    setIsJoining(true);
+    // Navigate to player room with PIN and encoded name query
+    router.push(
+      `/player/room/${pin}?name=${encodeURIComponent(nickname.trim())}`,
+    );
   };
 
   return (
-    <div className="relative min-h-screen gradient-dark flex flex-col justify-between overflow-hidden text-slate-100 px-4">
-      <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-indigo-900/40 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-900/30 rounded-full blur-[120px] pointer-events-none" />
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+      {/* Background Glow Accents */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-tr from-indigo-600/30 via-cyan-500/20 to-purple-600/30 blur-[120px] pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-900/20 blur-[140px] pointer-events-none rounded-full" />
 
-      <header className="w-full max-w-6xl mx-auto flex justify-between items-center py-6 relative z-10">
+      {/* Header Bar */}
+      <header className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between relative z-10">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 gradient-brand rounded-xl shadow-lg shadow-indigo-500/20">
-            <Sparkles className="w-6 h-6 text-white animate-pulse" />
+          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/30">
+            <Radio className="w-6 h-6 text-white animate-pulse" />
           </div>
-          <span className="font-extrabold text-2xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-indigo-400">
-            AuraQuiz
+          <span className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300">
+            AuraQuiz{" "}
+            <span className="text-xs px-2 py-0.5 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 rounded-full font-mono uppercase tracking-wider ml-1">
+              PRO
+            </span>
           </span>
         </div>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={toggleTheme}
-            className="p-2.5 rounded-xl glass hover:bg-white/10 text-slate-300 smooth-transition"
-            title="Toggle Light/Dark Theme"
-          >
-            {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-300" /> : <Moon className="w-5 h-5" />}
-          </button>
-
-          <button
-            onClick={() => router.push('/auth')}
-            className="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg shadow-indigo-500/20 active:scale-95 smooth-transition"
-          >
-            Host a Quiz
-          </button>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" onClick={() => router.push("/auth")}>
+            Host Login
+          </Button>
+          <Button variant="glowing" onClick={() => router.push("/host")}>
+            Create Quiz
+          </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col items-center justify-center py-10 relative z-10">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <motion.h1
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight mb-3"
-            >
-              Enterprise Live <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-pink-400 to-purple-400">
-                Engagement Platform
-              </span>
-            </motion.h1>
-            <p className="text-slate-400 text-sm sm:text-base">
-              Enter a game PIN below to play instantly. No app download required.
-            </p>
+      {/* Hero Section */}
+      <main className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        {/* Left Column: Headline & Hero Info */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6 }}
+          className="lg:col-span-7 space-y-6 text-center lg:text-left"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/30 text-xs font-semibold text-indigo-300 shadow-md backdrop-blur-md">
+            <Sparkles className="w-4 h-4 text-cyan-400" />
+            <span>Next-Generation Real-Time Interactive Platform</span>
           </div>
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="glass rounded-3xl p-8 sm:p-10 shadow-2xl relative"
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+            Engage Audiences with{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400">
+              Instant Real-Time Quizzes
+            </span>
+          </h1>
+
+          <p className="text-slate-300 text-lg sm:text-xl font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+            Ultra-fast Kahoot & Slido tier real-time quiz platform. Powered by
+            Socket.IO clustering, sub-200ms latency, and enterprise
+            observability.
+          </p>
+
+          {/* Key Feature Bullets */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-sm font-semibold text-slate-300">
+            <div className="flex items-center justify-center lg:justify-start gap-2">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>Up to 1,000+ Players</span>
+            </div>
+            <div className="flex items-center justify-center lg:justify-start gap-2">
+              <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" />
+              <span>Sub-200ms Updates</span>
+            </div>
+            <div className="flex items-center justify-center lg:justify-start gap-2">
+              <CheckCircle2 className="w-5 h-5 text-indigo-400 shrink-0" />
+              <span>Zero Connection Drops</span>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Right Column: PIN Join Glass Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="lg:col-span-5 w-full max-w-md mx-auto"
+        >
+          <Card
+            variant="glass"
+            className="p-8 border-indigo-500/30 shadow-2xl shadow-indigo-500/10"
           >
-            <AnimatePresence mode="wait">
-              {step === 'PIN' && (
-                <motion.form
-                  key="pin-form"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  onSubmit={handlePinSubmit}
-                  className="space-y-6"
-                >
-                  <div>
-                    <label className="block text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3 text-center">
-                      Game PIN
-                    </label>
-                    <input
-                      type="text"
-                      pattern="[0-9]*"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={pin}
-                      onChange={(e) => {
-                        const num = e.target.value.replace(/\D/g, '');
-                        setPin(num);
-                      }}
-                      placeholder="e.g. 540982"
-                      className="w-full text-center text-3xl font-extrabold py-4 px-6 rounded-2xl bg-slate-900/50 border border-slate-700/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-white tracking-widest placeholder:text-slate-600 placeholder:tracking-normal focus:outline-none smooth-transition"
-                    />
-                  </div>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl border border-indigo-500/30 flex items-center justify-center mx-auto mb-3 text-indigo-400 shadow-inner">
+                <Play className="w-6 h-6 ml-0.5 fill-indigo-400" />
+              </div>
+              <h2 className="text-2xl font-black text-white">Join Live Game</h2>
+              <p className="text-xs text-slate-400 mt-1">
+                Enter your 6-digit Game PIN to enter the lobby
+              </p>
+            </div>
 
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center gap-2 text-rose-400 text-sm font-medium bg-rose-500/10 p-3.5 rounded-xl border border-rose-500/20"
-                    >
-                      <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </motion.div>
-                  )}
-
-                  <button
-                    type="submit"
-                    className="w-full gradient-brand hover:brightness-110 text-white font-bold py-4 px-6 rounded-2xl shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 group smooth-transition active:scale-98"
-                  >
-                    <span>Enter Quiz</span>
-                    <Play className="w-5 h-5 fill-white group-hover:translate-x-1 transition-transform" />
-                  </button>
-                </motion.form>
-              )}
-
-              {step === 'NICKNAME' && (
-                <motion.form
-                  key="nickname-form"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  onSubmit={handleNicknameSubmit}
-                  className="space-y-6"
-                >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStep('PIN');
-                      setError('');
+            {step === "pin" ? (
+              <form onSubmit={handlePinSubmit} className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="GAME PIN"
+                    value={pin}
+                    onChange={(e) => {
+                      setPin(e.target.value.replace(/\D/g, ""));
+                      setError("");
                     }}
-                    className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold mb-2 inline-block hover:underline"
-                  >
-                    ← Back to enter PIN
-                  </button>
-
-                  <div>
-                    <label className="block text-sm font-semibold uppercase tracking-wider text-slate-300 mb-3 text-center">
-                      Choose Your Nickname
-                    </label>
-                    <input
-                      type="text"
-                      maxLength={15}
-                      value={nickname}
-                      onChange={(e) => setNickname(e.target.value)}
-                      placeholder="e.g. MasterCoder"
-                      className="w-full text-center text-2xl font-bold py-4 px-6 rounded-2xl bg-slate-900/50 border border-slate-700/50 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 text-white placeholder:text-slate-600 focus:outline-none smooth-transition"
-                    />
-                  </div>
-
+                    className="w-full text-center text-3xl tracking-[0.3em] font-black py-4 bg-slate-950 border border-slate-800 rounded-2xl text-indigo-300 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 uppercase"
+                  />
                   {error && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="flex items-center gap-2 text-rose-400 text-sm font-medium bg-rose-500/10 p-3.5 rounded-xl border border-rose-500/20"
-                    >
-                      <ShieldAlert className="w-5 h-5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </motion.div>
+                    <p className="text-xs text-rose-400 font-medium text-center mt-2">
+                      {error}
+                    </p>
                   )}
+                </div>
 
-                  <button
-                    type="submit"
-                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-6 rounded-2xl shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 smooth-transition active:scale-98"
+                <Button variant="glowing" size="xl" className="w-full">
+                  Enter Game <ArrowRight className="w-5 h-5 ml-1" />
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleJoinGame} className="space-y-4">
+                <div>
+                  <input
+                    type="text"
+                    maxLength={20}
+                    placeholder="YOUR NICKNAME"
+                    value={nickname}
+                    onChange={(e) => {
+                      setNickname(e.target.value);
+                      setError("");
+                    }}
+                    className="w-full text-center text-xl font-bold py-3.5 bg-slate-950 border border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20"
+                    autoFocus
+                  />
+                  {error && (
+                    <p className="text-xs text-rose-400 font-medium text-center mt-2">
+                      {error}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    size="lg"
+                    className="w-1/3"
+                    onClick={() => setStep("pin")}
                   >
-                    <span>Join Lobby</span>
-                    <CheckCircle className="w-5 h-5" />
-                  </button>
-                </motion.form>
-              )}
-
-              {step === 'JOINING' && (
-                <motion.div
-                  key="joining"
-                  className="flex flex-col items-center justify-center py-10 space-y-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <div className="w-12 h-12 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin" />
-                  <p className="text-slate-300 font-semibold text-lg">
-                    Securing safe connection channel...
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    Handshaking with real-time room {pin}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-
-          <div className="mt-6 text-center sm:hidden">
-            <button
-              onClick={() => router.push('/auth')}
-              className="text-indigo-400 hover:text-indigo-300 font-bold text-sm underline active:scale-95 transition-transform"
-            >
-              Are you a Host? Log in here
-            </button>
-          </div>
-        </div>
+                    Back
+                  </Button>
+                  <Button
+                    variant="glowing"
+                    size="lg"
+                    className="w-2/3"
+                    isLoading={isJoining}
+                  >
+                    Join Lobby
+                  </Button>
+                </div>
+              </form>
+            )}
+          </Card>
+        </motion.div>
       </main>
 
-      <footer className="w-full py-8 text-center border-t border-slate-800 relative z-10">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 px-4">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
-            <span>High Performance Gateway — 10,000+ Concurrent Nodes Active</span>
-          </div>
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-1">
-              <Monitor className="w-4 h-4 text-indigo-400" />
-              <span>Sub-200ms Synced Latency</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Award className="w-4 h-4 text-pink-400" />
-              <span>WCAG AA Complaint</span>
-            </div>
-          </div>
+      {/* Enterprise Platform Features Grid */}
+      <section className="max-w-7xl mx-auto px-6 py-16 border-t border-slate-800/80">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h2 className="text-3xl font-extrabold text-white">
+            Engineered for Enterprise Scale
+          </h2>
+          <p className="text-slate-400 text-sm mt-2">
+            Built on NestJS, Socket.IO clustering, PostgreSQL, and Next.js 15
+          </p>
         </div>
-      </footer>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card variant="interactive" className="p-6">
+            <Zap className="w-10 h-10 text-cyan-400 mb-4" />
+            <h3 className="text-lg font-bold text-white mb-2">
+              Sub-200ms Latency
+            </h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Optimized WebSocket event broadcasts deliver instant question
+              transitions and answer acknowledgements.
+            </p>
+          </Card>
+
+          <Card variant="interactive" className="p-6">
+            <ShieldCheck className="w-10 h-10 text-indigo-400 mb-4" />
+            <h3 className="text-lg font-bold text-white mb-2">
+              Resilient Reconnections
+            </h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Cryptographic reconnect tokens preserve player scores and state
+              during network switches.
+            </p>
+          </Card>
+
+          <Card variant="interactive" className="p-6">
+            <Activity className="w-10 h-10 text-emerald-400 mb-4" />
+            <h3 className="text-lg font-bold text-white mb-2">
+              SRE Observability
+            </h3>
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Prometheus metrics and Sentry context tracing power live
+              operations control panel.
+            </p>
+          </Card>
+        </div>
+      </section>
     </div>
   );
 }
