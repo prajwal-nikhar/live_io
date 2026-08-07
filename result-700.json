@@ -1,0 +1,574 @@
+{
+  "aggregate": {
+    "counters": {
+      "vusers.created_by_name.Join Quiz": 4320,
+      "vusers.created": 4320,
+      "vusers.failed": 4320
+    },
+    "rates": {},
+    "firstCounterAt": 1786104058505,
+    "lastCounterAt": 1786104419320,
+    "firstMetricAt": 1786104058505,
+    "lastMetricAt": 1786104419320,
+    "period": 1786104410000,
+    "summaries": {},
+    "histograms": {}
+  },
+  "intermediate": [
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 15,
+        "vusers.created": 15,
+        "vusers.failed": 3
+      },
+      "rates": {},
+      "firstCounterAt": 1786104058505,
+      "lastCounterAt": 1786104059731,
+      "firstMetricAt": 1786104058505,
+      "lastMetricAt": 1786104059731,
+      "period": "1786104050000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 120,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104060004,
+      "lastCounterAt": 1786104069703,
+      "firstMetricAt": 1786104060004,
+      "lastMetricAt": 1786104069703,
+      "period": "1786104060000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 122,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104070004,
+      "lastCounterAt": 1786104079965,
+      "firstMetricAt": 1786104070004,
+      "lastMetricAt": 1786104079965,
+      "period": "1786104070000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 118,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104080007,
+      "lastCounterAt": 1786104089785,
+      "firstMetricAt": 1786104080007,
+      "lastMetricAt": 1786104089785,
+      "period": "1786104080000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 121
+      },
+      "rates": {},
+      "firstCounterAt": 1786104090007,
+      "lastCounterAt": 1786104099982,
+      "firstMetricAt": 1786104090007,
+      "lastMetricAt": 1786104099982,
+      "period": "1786104090000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104100008,
+      "lastCounterAt": 1786104109943,
+      "firstMetricAt": 1786104100008,
+      "lastMetricAt": 1786104109943,
+      "period": "1786104100000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 120,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104110008,
+      "lastCounterAt": 1786104119995,
+      "firstMetricAt": 1786104110008,
+      "lastMetricAt": 1786104119995,
+      "period": "1786104110000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104120009,
+      "lastCounterAt": 1786104129739,
+      "firstMetricAt": 1786104120009,
+      "lastMetricAt": 1786104129739,
+      "period": "1786104120000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 119
+      },
+      "rates": {},
+      "firstCounterAt": 1786104130006,
+      "lastCounterAt": 1786104139611,
+      "firstMetricAt": 1786104130006,
+      "lastMetricAt": 1786104139611,
+      "period": "1786104130000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 121
+      },
+      "rates": {},
+      "firstCounterAt": 1786104140007,
+      "lastCounterAt": 1786104149981,
+      "firstMetricAt": 1786104140007,
+      "lastMetricAt": 1786104149981,
+      "period": "1786104140000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104150009,
+      "lastCounterAt": 1786104159925,
+      "firstMetricAt": 1786104150009,
+      "lastMetricAt": 1786104159925,
+      "period": "1786104150000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 120,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104160009,
+      "lastCounterAt": 1786104169982,
+      "firstMetricAt": 1786104160009,
+      "lastMetricAt": 1786104169982,
+      "period": "1786104160000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 120,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104170009,
+      "lastCounterAt": 1786104179959,
+      "firstMetricAt": 1786104170009,
+      "lastMetricAt": 1786104179959,
+      "period": "1786104170000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 119
+      },
+      "rates": {},
+      "firstCounterAt": 1786104180009,
+      "lastCounterAt": 1786104189871,
+      "firstMetricAt": 1786104180009,
+      "lastMetricAt": 1786104189871,
+      "period": "1786104180000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104190009,
+      "lastCounterAt": 1786104199911,
+      "firstMetricAt": 1786104190009,
+      "lastMetricAt": 1786104199911,
+      "period": "1786104190000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 118,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104200009,
+      "lastCounterAt": 1786104209611,
+      "firstMetricAt": 1786104200009,
+      "lastMetricAt": 1786104209611,
+      "period": "1786104200000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 121
+      },
+      "rates": {},
+      "firstCounterAt": 1786104210009,
+      "lastCounterAt": 1786104219967,
+      "firstMetricAt": 1786104210009,
+      "lastMetricAt": 1786104219967,
+      "period": "1786104210000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104220009,
+      "lastCounterAt": 1786104229977,
+      "firstMetricAt": 1786104220009,
+      "lastMetricAt": 1786104229977,
+      "period": "1786104220000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104230009,
+      "lastCounterAt": 1786104239990,
+      "firstMetricAt": 1786104230009,
+      "lastMetricAt": 1786104239990,
+      "period": "1786104230000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 120,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104240009,
+      "lastCounterAt": 1786104249973,
+      "firstMetricAt": 1786104240009,
+      "lastMetricAt": 1786104249973,
+      "period": "1786104240000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 119
+      },
+      "rates": {},
+      "firstCounterAt": 1786104250009,
+      "lastCounterAt": 1786104259901,
+      "firstMetricAt": 1786104250009,
+      "lastMetricAt": 1786104259901,
+      "period": "1786104250000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 120,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104260009,
+      "lastCounterAt": 1786104269952,
+      "firstMetricAt": 1786104260009,
+      "lastMetricAt": 1786104269952,
+      "period": "1786104260000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104270006,
+      "lastCounterAt": 1786104279972,
+      "firstMetricAt": 1786104270006,
+      "lastMetricAt": 1786104279972,
+      "period": "1786104270000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 119
+      },
+      "rates": {},
+      "firstCounterAt": 1786104280009,
+      "lastCounterAt": 1786104289974,
+      "firstMetricAt": 1786104280009,
+      "lastMetricAt": 1786104289974,
+      "period": "1786104280000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 122,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104290009,
+      "lastCounterAt": 1786104299993,
+      "firstMetricAt": 1786104290009,
+      "lastMetricAt": 1786104299993,
+      "period": "1786104290000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 119
+      },
+      "rates": {},
+      "firstCounterAt": 1786104300009,
+      "lastCounterAt": 1786104309980,
+      "firstMetricAt": 1786104300009,
+      "lastMetricAt": 1786104309980,
+      "period": "1786104300000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 119
+      },
+      "rates": {},
+      "firstCounterAt": 1786104310009,
+      "lastCounterAt": 1786104319977,
+      "firstMetricAt": 1786104310009,
+      "lastMetricAt": 1786104319977,
+      "period": "1786104310000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104320009,
+      "lastCounterAt": 1786104329996,
+      "firstMetricAt": 1786104320009,
+      "lastMetricAt": 1786104329996,
+      "period": "1786104320000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104330009,
+      "lastCounterAt": 1786104339977,
+      "firstMetricAt": 1786104330009,
+      "lastMetricAt": 1786104339977,
+      "period": "1786104330000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 117,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104340009,
+      "lastCounterAt": 1786104349704,
+      "firstMetricAt": 1786104340009,
+      "lastMetricAt": 1786104349704,
+      "period": "1786104340000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104350009,
+      "lastCounterAt": 1786104359735,
+      "firstMetricAt": 1786104350009,
+      "lastMetricAt": 1786104359735,
+      "period": "1786104350000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104360009,
+      "lastCounterAt": 1786104369749,
+      "firstMetricAt": 1786104360009,
+      "lastMetricAt": 1786104369749,
+      "period": "1786104360000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 121,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104370009,
+      "lastCounterAt": 1786104379939,
+      "firstMetricAt": 1786104370009,
+      "lastMetricAt": 1786104379939,
+      "period": "1786104370000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 119,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104380009,
+      "lastCounterAt": 1786104389705,
+      "firstMetricAt": 1786104380009,
+      "lastMetricAt": 1786104389705,
+      "period": "1786104380000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120,
+        "vusers.failed": 121
+      },
+      "rates": {},
+      "firstCounterAt": 1786104390009,
+      "lastCounterAt": 1786104399964,
+      "firstMetricAt": 1786104390009,
+      "lastMetricAt": 1786104399964,
+      "period": "1786104390000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.failed": 119,
+        "vusers.created_by_name.Join Quiz": 120,
+        "vusers.created": 120
+      },
+      "rates": {},
+      "firstCounterAt": 1786104400009,
+      "lastCounterAt": 1786104409704,
+      "firstMetricAt": 1786104400009,
+      "lastMetricAt": 1786104409704,
+      "period": "1786104400000",
+      "summaries": {},
+      "histograms": {}
+    },
+    {
+      "counters": {
+        "vusers.created_by_name.Join Quiz": 105,
+        "vusers.created": 105,
+        "vusers.failed": 117
+      },
+      "rates": {},
+      "firstCounterAt": 1786104410009,
+      "lastCounterAt": 1786104419320,
+      "firstMetricAt": 1786104410009,
+      "lastMetricAt": 1786104419320,
+      "period": "1786104410000",
+      "summaries": {},
+      "histograms": {}
+    }
+  ]
+}

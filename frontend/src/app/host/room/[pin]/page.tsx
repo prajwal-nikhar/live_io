@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getSocket, emitWithTimeout, disconnectSocket } from "@/lib/socket";
 import { getBackendUrl, formatImageUrl } from "@/lib/api";
@@ -27,6 +27,9 @@ import {
   Circle,
   Square,
   Clock,
+  Search,
+  Sparkles,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -54,6 +57,15 @@ export default function HostRoom() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
   const [copiedPin, setCopiedPin] = useState(false);
+
+  // Large Event Mode State
+  const [showParticipantsDrawer, setShowParticipantsDrawer] = useState(false);
+  const [participantSearch, setParticipantSearch] = useState("");
+  const [participantSort, setParticipantSort] = useState<
+    "recent" | "alphabetical"
+  >("recent");
+
+  const isLargeEvent = players.length >= 30;
 
   const deduplicateLeaderboard = (list: any[]): any[] => {
     if (!Array.isArray(list)) return [];
@@ -300,20 +312,46 @@ export default function HostRoom() {
     );
   };
 
+  // Filter & Sort Players for Participant Drawer
+  const filteredPlayers = useMemo(() => {
+    let result = [...players];
+    if (participantSearch.trim()) {
+      const q = participantSearch.toLowerCase();
+      result = result.filter((p) => p.name && p.name.toLowerCase().includes(q));
+    }
+    if (participantSort === "alphabetical") {
+      result.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    } else {
+      // Recent (reverse order)
+      result.reverse();
+    }
+    return result;
+  }, [players, participantSearch, participantSort]);
+
+  // Last 10 joined players for Large Event Ticker
+  const recentTenPlayers = useMemo(() => {
+    return [...players].reverse().slice(0, 10);
+  }, [players]);
+
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col relative overflow-hidden">
-      {/* Navigation Bar */}
-      <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl px-6 py-4 flex items-center justify-between relative z-10">
+      {/* Permanent Sticky Host Control Bar */}
+      <header className="sticky top-0 z-50 border-b border-slate-800/90 bg-slate-950/90 backdrop-blur-2xl px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-2xl">
         <div className="flex items-center gap-3">
           <Badge variant="live" pulse>
             Host Control Room
           </Badge>
-          <div className="flex items-center gap-2 bg-slate-950 px-3 py-1 rounded-xl border border-slate-800 font-mono text-sm">
-            <span className="text-slate-400">PIN:</span>
-            <span className="font-bold text-white tracking-wider">{pin}</span>
+
+          {/* Interactive Pinned PIN Copy Badge */}
+          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800 font-mono text-sm shadow-inner">
+            <span className="text-slate-400 text-xs font-bold">PIN:</span>
+            <span className="font-extrabold text-white tracking-widest">
+              {pin}
+            </span>
             <button
               onClick={handleCopyPin}
-              className="text-indigo-400 hover:text-indigo-300 ml-1"
+              title="Copy PIN"
+              className="text-indigo-400 hover:text-indigo-300 ml-1 transition-colors"
             >
               {copiedPin ? (
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -322,23 +360,75 @@ export default function HostRoom() {
               )}
             </button>
           </div>
+
+          {/* Connected Player Count Badge */}
+          <button
+            onClick={() => setShowParticipantsDrawer(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/60 border border-indigo-500/30 text-indigo-300 text-xs font-bold transition-all"
+          >
+            <Users className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>{players.length} Connected</span>
+          </button>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+        {/* Dynamic Contextual Action Buttons Pinned in Control Bar */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {sessionState === "LOBBY" && (
+            <Button
+              variant="glowing"
+              size="sm"
+              onClick={handleStartGame}
+              disabled={players.length === 0}
+            >
+              <Play className="w-4 h-4 mr-1 fill-white shrink-0" /> Start Quiz
+            </Button>
+          )}
+
+          {sessionState === "QUESTION_ACTIVE" && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleSkipQuestion}
+              >
+                <FastForward className="w-4 h-4 mr-1 text-amber-400 shrink-0" />{" "}
+                Skip
+              </Button>
+              <Button variant="primary" size="sm" onClick={handleShowAnswer}>
+                <Eye className="w-4 h-4 mr-1 shrink-0" /> Show Stats
+              </Button>
+            </>
+          )}
+
+          {(sessionState === "ANSWER_REVEAL" ||
+            sessionState === "QUESTION_LOCKED") && (
+            <Button variant="glowing" size="sm" onClick={handleShowLeaderboard}>
+              <Trophy className="w-4 h-4 mr-1 text-amber-400 shrink-0" />{" "}
+              Leaderboard
+            </Button>
+          )}
+
+          {sessionState === "LEADERBOARD" && (
+            <Button variant="primary" size="sm" onClick={handleNextQuestion}>
+              Next Question <ArrowRight className="w-4 h-4 ml-1 shrink-0" />
+            </Button>
+          )}
+
+          {sessionState === "QUIZ_FINISHED" && (
+            <Button variant="primary" size="sm" onClick={handleExportCsv}>
+              <Download className="w-4 h-4 mr-1 shrink-0" /> CSV Report
+            </Button>
+          )}
+
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowQrModal(true)}
           >
             <QrCode className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span className="hidden xs:inline ml-1">Show QR</span>
+            <span className="hidden sm:inline ml-1">QR Code</span>
           </Button>
-          <span className="text-slate-300 text-xs flex items-center gap-1.5 font-bold shrink-0">
-            <Users className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span>
-              {players.length} <span className="hidden xs:inline">Joined</span>
-            </span>
-          </span>
+
           <Button
             variant="secondary"
             size="sm"
@@ -372,79 +462,175 @@ export default function HostRoom() {
                 exit={{ opacity: 0 }}
                 className="space-y-8 flex-1 flex flex-col justify-center"
               >
-                {/* Room PIN & Large QR Code Display Simultaneously */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-slate-900/60 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl shadow-2xl">
-                  {/* Left: Game PIN & Join URL */}
-                  <div className="text-center space-y-4">
-                    <p className="text-indigo-400 text-xs font-black uppercase tracking-widest">
-                      ROOM PIN
-                    </p>
-                    <h1 className="text-5xl sm:text-6xl font-black tracking-widest text-white animate-pulse">
-                      {pin}
-                    </h1>
-                    <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
-                      or visit{" "}
-                      <strong className="text-indigo-300 font-extrabold">
-                        cognition.up.railway.app
-                      </strong>
-                    </p>
-                  </div>
+                {/* 1. ADAPTIVE LOBBY LAYOUT (<30 vs >=30 Players) */}
+                {!isLargeEvent ? (
+                  /* Standard Mode (<30 Players): Large PIN & Large QR Side-by-Side */
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-slate-900/60 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl shadow-2xl">
+                    <div className="text-center space-y-4">
+                      <p className="text-indigo-400 text-xs font-black uppercase tracking-widest">
+                        ROOM PIN
+                      </p>
+                      <h1 className="text-5xl sm:text-6xl font-black tracking-widest text-white animate-pulse">
+                        {pin}
+                      </h1>
+                      <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
+                        or visit{" "}
+                        <strong className="text-indigo-300 font-extrabold">
+                          cognition.up.railway.app
+                        </strong>
+                      </p>
+                    </div>
 
-                  {/* Right: Simultaneous Large QR Code */}
-                  <div className="text-center space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-6 md:pt-0 md:pl-8">
-                    <p className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
-                      <QrCode className="w-4 h-4" /> Scan to Join Instantly
-                    </p>
-                    <div className="inline-block p-3 rounded-2xl bg-white border border-slate-100 shadow-xl my-2">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-                          typeof window !== "undefined"
-                            ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
-                            : `https://cognition.up.railway.app/?pin=${pin}`,
-                        )}`}
-                        alt="Join QR Code"
-                        className="w-36 h-36 sm:w-44 sm:h-44 mx-auto"
-                      />
+                    <div className="text-center space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-6 md:pt-0 md:pl-8">
+                      <p className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                        <QrCode className="w-4 h-4" /> Scan to Join Instantly
+                      </p>
+                      <div className="inline-block p-3 rounded-2xl bg-white border border-slate-100 shadow-xl my-2">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                            typeof window !== "undefined"
+                              ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
+                              : `https://cognition.up.railway.app/?pin=${pin}`,
+                          )}`}
+                          alt="Join QR Code"
+                          className="w-36 h-36 sm:w-44 sm:h-44 mx-auto"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Player Grid with Kick Action */}
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                      <Users className="w-4 h-4" />
-                      <span>Lobby Participants ({players.length})</span>
-                    </h3>
-                  </div>
-
-                  {players.length === 0 ? (
-                    <Card
-                      variant="glass"
-                      className="p-8 text-center text-xs text-slate-500 font-bold"
-                    >
-                      Waiting for participants to join...
-                    </Card>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
-                      {players.map((p) => (
-                        <div
-                          key={p.id}
-                          className="group relative px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-center font-extrabold text-slate-200 text-xs shadow-md transition-all hover:border-rose-500/50"
-                        >
-                          <span className="block truncate">{p.name}</span>
-                          <button
-                            onClick={() => handleKickPlayer(p.id)}
-                            className="absolute inset-0 bg-rose-950/90 text-rose-300 font-bold text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
-                          >
-                            <UserX className="w-3.5 h-3.5" /> Kick
-                          </button>
+                ) : (
+                  /* 2. LARGE EVENT MODE (>=30 Players): Summary Hero Card & Last 10 Joined Ticker */
+                  <div className="bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-500/30 p-8 rounded-3xl backdrop-blur-2xl shadow-2xl space-y-6">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-800/80 pb-6">
+                      <div className="space-y-2 text-center md:text-left">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-extrabold">
+                          <Zap className="w-3.5 h-3.5 fill-indigo-400 animate-bounce" />
+                          <span>Large Event Mode Active</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white flex items-center justify-center md:justify-start gap-3">
+                          <span>{players.length}</span>
+                          <span className="text-slate-400 text-2xl font-bold">
+                            Participants Connected
+                          </span>
+                        </h1>
+                        <p className="text-slate-400 text-xs">
+                          Instruct audience to enter PIN{" "}
+                          <strong className="text-indigo-300 font-mono">
+                            {pin}
+                          </strong>{" "}
+                          at{" "}
+                          <strong className="text-white">
+                            cognition.up.railway.app
+                          </strong>
+                        </p>
+                      </div>
 
+                      {/* Compact QR Badge */}
+                      <div className="flex flex-col items-center gap-2">
+                        <button
+                          onClick={() => setShowQrModal(true)}
+                          className="p-2.5 rounded-2xl bg-white hover:scale-105 transition-transform shadow-xl border border-slate-100"
+                          title="Expand QR Code"
+                        >
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(
+                              typeof window !== "undefined"
+                                ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
+                                : `https://cognition.up.railway.app/?pin=${pin}`,
+                            )}`}
+                            alt="Join QR Code"
+                            className="w-20 h-20"
+                          />
+                        </button>
+                        <span className="text-[10px] font-extrabold text-cyan-400 flex items-center gap-1">
+                          <QrCode className="w-3 h-3" /> Click to Expand
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Last 10 Joined Ticker */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Recent Joins</span>
+                        </h4>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setShowParticipantsDrawer(true)}
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1 text-indigo-400" />{" "}
+                          View All Participants ({players.length})
+                        </Button>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {recentTenPlayers.map((p, idx) => (
+                          <motion.div
+                            key={p.id || idx}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            className="px-3 py-1.5 rounded-xl bg-slate-900/90 border border-indigo-500/30 text-xs font-extrabold text-slate-200 flex items-center gap-2 shadow-sm"
+                          >
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="truncate max-w-[120px]">
+                              {p.name}
+                            </span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Standard Mode Player Grid (< 30 Players) */}
+                {!isLargeEvent && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-indigo-400" />
+                        <span>Lobby Participants ({players.length})</span>
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowParticipantsDrawer(true)}
+                      >
+                        <Eye className="w-3.5 h-3.5 mr-1 text-indigo-400" />{" "}
+                        Full Roster
+                      </Button>
+                    </div>
+
+                    {players.length === 0 ? (
+                      <Card
+                        variant="glass"
+                        className="p-8 text-center text-xs text-slate-500 font-bold"
+                      >
+                        Waiting for participants to join...
+                      </Card>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {players.map((p) => (
+                          <div
+                            key={p.id}
+                            className="group relative px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-center font-extrabold text-slate-200 text-xs shadow-md transition-all hover:border-rose-500/50"
+                          >
+                            <span className="block truncate">{p.name}</span>
+                            <button
+                              onClick={() => handleKickPlayer(p.id)}
+                              className="absolute inset-0 bg-rose-950/90 text-rose-300 font-bold text-xs rounded-xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1"
+                            >
+                              <UserX className="w-3.5 h-3.5" /> Kick
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Primary Launch Action */}
                 <div className="pt-4 text-center">
                   <Button
                     variant="glowing"
@@ -459,7 +645,7 @@ export default function HostRoom() {
               </motion.div>
             )}
 
-            {/* QUESTION ACTIVE STATE – KAHOOT HOST PRESENTATION */}
+            {/* QUESTION ACTIVE STATE */}
             {sessionState === "QUESTION_ACTIVE" && currentQuestion && (
               <motion.div
                 key="playing-step"
@@ -468,7 +654,7 @@ export default function HostRoom() {
                 exit={{ opacity: 0 }}
                 className="space-y-6 flex-1 flex flex-col justify-between"
               >
-                {/* Header Info: Quiz Title & Question Number */}
+                {/* Header Info */}
                 <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-900/80 border border-slate-800 px-6 py-3 rounded-2xl gap-2">
                   <div className="text-xs font-black text-indigo-400 uppercase tracking-wider">
                     Quiz: <span className="text-white">{quizTitle}</span>
@@ -478,13 +664,12 @@ export default function HostRoom() {
                   </Badge>
                 </div>
 
-                {/* Question Prompt & Optional Image */}
+                {/* Question Prompt */}
                 <div className="text-center space-y-4">
                   <h2 className="text-2xl sm:text-3xl font-black text-slate-100 max-w-4xl mx-auto leading-snug">
                     {currentQuestion.text}
                   </h2>
 
-                  {/* Optional Question Image */}
                   {currentQuestion.imageUrl && (
                     <div className="my-3 flex justify-center">
                       <img
@@ -503,7 +688,7 @@ export default function HostRoom() {
                   )}
                 </div>
 
-                {/* 4 Kahoot-style Colored Answer Option Cards */}
+                {/* Option Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {currentQuestion.options?.map((o: any, idx: number) => {
                     const shapes = [
@@ -574,7 +759,6 @@ export default function HostRoom() {
                           </span>
                         </div>
 
-                        {/* Live Distribution Bar */}
                         <div className="w-full h-2.5 bg-black/30 rounded-full overflow-hidden">
                           <div
                             style={{ width: `${percentage}%` }}
@@ -586,7 +770,7 @@ export default function HostRoom() {
                   })}
                 </div>
 
-                {/* Bottom Bar: Live Progress Metrics & Timer */}
+                {/* Progress Metrics & Timer */}
                 <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 px-6 py-4 rounded-2xl">
                   <div className="flex items-center gap-6 text-sm font-extrabold">
                     <div className="flex items-center gap-2 text-indigo-300">
@@ -649,14 +833,13 @@ export default function HostRoom() {
                     </h2>
                   </div>
 
-                  {/* Response Distribution Bar Chart */}
                   <div className="space-y-3 max-w-2xl mx-auto w-full my-2">
                     <h3 className="text-xs font-black uppercase tracking-wider text-slate-400">
                       Response Distribution ({stats.totalResponses} submissions)
                     </h3>
 
                     <div className="space-y-3">
-                      {stats.options?.map((o: any, idx: number) => {
+                      {stats.options?.map((o: any) => {
                         const percentage =
                           stats.totalResponses > 0
                             ? (o.count / stats.totalResponses) * 100
@@ -866,7 +1049,95 @@ export default function HostRoom() {
         </Card>
       </main>
 
-      {/* QR Code Join Modal */}
+      {/* 3. PARTICIPANT DRAWER / MODAL FOR LARGE EVENTS */}
+      <Modal
+        isOpen={showParticipantsDrawer}
+        onClose={() => setShowParticipantsDrawer(false)}
+        title={`Lobby Participants (${players.length})`}
+      >
+        <div className="space-y-4">
+          {/* Search & Sort Bar */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search participant by name..."
+                value={participantSearch}
+                onChange={(e) => setParticipantSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-indigo-500 placeholder:text-slate-500"
+              />
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => setParticipantSort("recent")}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  participantSort === "recent"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                Recent
+              </button>
+              <button
+                onClick={() => setParticipantSort("alphabetical")}
+                className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  participantSort === "alphabetical"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+                }`}
+              >
+                A–Z
+              </button>
+            </div>
+          </div>
+
+          {/* Optimized Windowed List Container */}
+          <div className="max-h-[55vh] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+            {filteredPlayers.length === 0 ? (
+              <div className="text-center py-12 text-slate-500 text-xs font-bold">
+                No participants match "{participantSearch}"
+              </div>
+            ) : (
+              filteredPlayers.slice(0, 300).map((p, idx) => (
+                <div
+                  key={p.id || idx}
+                  className="flex items-center justify-between px-4 py-3 bg-slate-900/90 border border-slate-800/80 rounded-xl hover:border-slate-700 transition-all"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <span className="font-extrabold text-xs text-slate-200">
+                      {p.name}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleKickPlayer(p.id)}
+                    className="px-2.5 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800/50 text-[11px] font-bold flex items-center gap-1 transition-all"
+                  >
+                    <UserX className="w-3.5 h-3.5" /> Kick
+                  </button>
+                </div>
+              ))
+            )}
+            {filteredPlayers.length > 300 && (
+              <div className="text-center py-2 text-slate-500 text-[11px] font-bold">
+                Showing top 300 results of {filteredPlayers.length}. Refine
+                search to find specific participants.
+              </div>
+            )}
+          </div>
+
+          <Button
+            variant="secondary"
+            className="w-full mt-2"
+            onClick={() => setShowParticipantsDrawer(false)}
+          >
+            Close Roster
+          </Button>
+        </div>
+      </Modal>
+
+      {/* 5. QR CODE MODAL FOR COMPACT MODES */}
       <Modal
         isOpen={showQrModal}
         onClose={() => setShowQrModal(false)}
@@ -874,13 +1145,14 @@ export default function HostRoom() {
       >
         <div className="text-center space-y-4">
           <p className="text-slate-400 text-xs max-w-md mx-auto">
-            Instruct participants to enter this PIN at{" "}
+            Instruct participants to enter PIN{" "}
+            <strong className="text-indigo-300 font-mono">{pin}</strong> at{" "}
             <strong className="text-white">Cognition | GIM</strong>
           </p>
 
           <div className="inline-block p-3 rounded-2xl bg-white border border-slate-100 shadow-xl mt-2">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
                 typeof window !== "undefined"
                   ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
                   : `https://cognition.up.railway.app/?pin=${pin}`,
@@ -889,6 +1161,7 @@ export default function HostRoom() {
               className="w-48 h-48 mx-auto"
             />
           </div>
+
           <Button
             variant="secondary"
             className="w-full"
