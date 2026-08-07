@@ -1,0 +1,61 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "title": "Active WebSocket Connections",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "targets": [{ "expr": "active_sockets", "legendFormat": "Sockets" }]
+    },
+    {
+      "title": "Disconnect & Reconnect Rate (/sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 16, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(socket_disconnects_total[1m])",
+          "legendFormat": "Disconnects/sec"
+        },
+        {
+          "expr": "rate(socket_reconnects_total[1m])",
+          "legendFormat": "Reconnects/sec"
+        }
+      ]
+    },
+    {
+      "title": "Socket Messages Throughput by Event",
+      "type": "timeseries",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 6 },
+      "targets": [
+        {
+          "expr": "rate(socket_messages_total[1m])",
+          "legendFormat": "{{event}}"
+        }
+      ]
+    },
+    {
+      "title": "Failed Join Attempts",
+      "type": "stat",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 6 },
+      "targets": [
+        {
+          "expr": "increase(socket_join_failures_total[5m])",
+          "legendFormat": "Failed Joins"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["quiz", "sockets", "socket.io"],
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "Socket.IO Dashboard",
+  "uid": "socket-io"
+}

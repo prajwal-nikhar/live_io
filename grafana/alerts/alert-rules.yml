@@ -1,0 +1,144 @@
+groups:
+  - name: QuizPlatformAlerts
+    rules:
+      # ==================================================================
+      # CRITICAL ALERTS (P1 - Immediate PagerDuty Trigger)
+      # ==================================================================
+      - alert: APIUnavailable
+        expr: nodejs_process_uptime_seconds < 1 or absent(nodejs_process_uptime_seconds)
+        for: 30s
+        labels:
+          severity: critical
+          tier: p1
+        annotations:
+          summary: "API Server is Unavailable or Down"
+          description: "NestJS process uptime probe is failing or unresponsive for > 30 seconds."
+
+      - alert: DatabaseUnavailable
+        expr: increase(db_failed_queries_total[1m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          tier: p1
+        annotations:
+          summary: "Database Connection or Operations Failure"
+          description: "PostgreSQL database failed queries spike detected (> 10 failures in 1 min)."
+
+      - alert: SocketGatewayDown
+        expr: active_sockets == 0 and connected_players > 0
+        for: 1m
+        labels:
+          severity: critical
+          tier: p1
+        annotations:
+          summary: "Socket Gateway Connection Failure"
+          description: "Active Socket.IO connection gauge dropped to 0 while players remain in rooms."
+
+      - alert: DeploymentFailure
+        expr: increase(http_requests_total{code="500"}[5m]) > 50
+        for: 2m
+        labels:
+          severity: critical
+          tier: p1
+        annotations:
+          summary: "Railway Deployment High 500 Error Rate Spike"
+          description: "More than 50 HTTP 500 internal server errors recorded post-deployment."
+
+      # ==================================================================
+      # HIGH ALERTS (P2 - 15 Minute SRE Response)
+      # ==================================================================
+      - alert: HighCPUUsage
+        expr: rate(nodejs_process_cpu_seconds_total[1m]) * 100 > 80
+        for: 2m
+        labels:
+          severity: high
+          tier: p2
+        annotations:
+          summary: "Node.js Process CPU Exceeds 80%"
+          description: "Backend CPU utilization has sustained over 80% for 2 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (nodejs_process_heap_bytes / 1073741824) > 0.8
+        for: 3m
+        labels:
+          severity: high
+          tier: p2
+        annotations:
+          summary: "Node.js Heap Memory Exceeds 80%"
+          description: "Process memory heap usage exceeds 80% threshold."
+
+      - alert: HighEventLoopLag
+        expr: nodejs_eventloop_lag_seconds > 0.1
+        for: 1m
+        labels:
+          severity: high
+          tier: p2
+        annotations:
+          summary: "Node.js Event Loop Lag Exceeds 100ms"
+          description: "Event loop lag has breached 100ms threshold, signaling synchronous thread blocking."
+
+      - alert: HighDatabaseLatency
+        expr: histogram_quantile(0.95, sum(rate(db_latency_seconds_bucket[1m])) by (le)) > 0.5
+        for: 2m
+        labels:
+          severity: high
+          tier: p2
+        annotations:
+          summary: "Database p95 Latency Exceeds 500ms"
+          description: "Prisma query p95 latency exceeded 500ms for 2 consecutive minutes."
+
+      # ==================================================================
+      # MEDIUM ALERTS (P3 - Next Business Day / Queue Item)
+      # ==================================================================
+      - alert: PlayerJoinFailuresSpike
+        expr: increase(socket_join_failures_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: medium
+          tier: p3
+        annotations:
+          summary: "Elevated Player Join Failure Rate"
+          description: "More than 10 failed player join attempts in 5 minutes."
+
+      - alert: SocketDisconnectSpike
+        expr: rate(socket_disconnects_total[1m]) > 20
+        for: 3m
+        labels:
+          severity: medium
+          tier: p3
+        annotations:
+          summary: "Socket Disconnect Rate Spike Detected"
+          description: "Socket disconnect rate exceeded 20 disconnects/sec."
+
+      - alert: FailedLoginsSpike
+        expr: increase(http_requests_total{route="/auth/login",code="401"}[5m]) > 20
+        for: 5m
+        labels:
+          severity: medium
+          tier: p3
+        annotations:
+          summary: "Elevated Host Login Auth Failures"
+          description: "More than 20 invalid login attempts in 5 minutes."
+
+      - alert: SlowHTTPResponses
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le)) > 1.0
+        for: 5m
+        labels:
+          severity: medium
+          tier: p3
+        annotations:
+          summary: "HTTP Request p95 Latency Exceeds 1s"
+          description: "p95 HTTP response duration exceeded 1.0s over 5 minutes."
+
+      # ==================================================================
+      # LOW ALERTS (P4 - Informational Logging)
+      # ==================================================================
+      - alert: BuildFailureOrWarningLogs
+        expr: increase(http_requests_total{code="404"}[15m]) > 50
+        for: 15m
+        labels:
+          severity: low
+          tier: p4
+        annotations:
+          summary: "Informational Alert: 404 Route Requests Spike"
+          description: "Notice of elevated 404 missing resource requests."

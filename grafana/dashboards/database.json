@@ -1,0 +1,70 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "title": "Prisma Database Latency (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(db_latency_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p95 Query Latency"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(db_latency_seconds_bucket[1m])) by (le))",
+          "legendFormat": "p99 Query Latency"
+        }
+      ]
+    },
+    {
+      "title": "Slow Database Queries (>100ms)",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "increase(db_slow_queries_total[5m])",
+          "legendFormat": "Slow Queries (5m)"
+        }
+      ]
+    },
+    {
+      "title": "Active Pool Connections & Transactions",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "db_connections_active",
+          "legendFormat": "Active Connections"
+        },
+        {
+          "expr": "rate(db_transactions_total[1m])",
+          "legendFormat": "Transactions/sec"
+        }
+      ]
+    },
+    {
+      "title": "Database Query Errors",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "increase(db_failed_queries_total[5m])",
+          "legendFormat": "Failed DB Queries"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["quiz", "database", "prisma", "postgresql"],
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "Database Dashboard",
+  "uid": "database-overview"
+}

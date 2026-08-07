@@ -121,6 +121,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleDisconnect(client: Socket) {
     this.logger.log(`[Socket Disconnected] ID: ${client.id}`);
     this.metricsService.activeSocketsGauge.dec();
+    this.metricsService.socketDisconnectsTotal.inc({
+      reason: "transport_close",
+    });
 
     const result = await this.roomService.handlePlayerDisconnect(client.id);
     if (result) {
@@ -158,6 +161,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit("room_created", payload);
       this.metricsService.activeRoomsGauge.inc();
+      this.metricsService.quizHostActionsTotal.inc({ action: "create_room" });
 
       this.logger.log(
         `[Room Created] PIN: ${session.pin} SessionId: ${session.id}`,

@@ -1,0 +1,66 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "title": "CPU Usage Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(nodejs_process_cpu_seconds_total[1m]) * 100",
+          "legendFormat": "CPU %"
+        }
+      ]
+    },
+    {
+      "title": "Node.js Memory (Heap & RSS)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "nodejs_process_heap_bytes",
+          "legendFormat": "Heap Used"
+        },
+        {
+          "expr": "nodejs_process_resident_memory_bytes",
+          "legendFormat": "RSS Memory"
+        }
+      ]
+    },
+    {
+      "title": "Event Loop Lag (s)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "nodejs_eventloop_lag_seconds",
+          "legendFormat": "Event Loop Lag"
+        }
+      ]
+    },
+    {
+      "title": "Active File Descriptors",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "nodejs_process_open_fds",
+          "legendFormat": "Open File Descriptors"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["quiz", "infrastructure", "nodejs", "containers"],
+  "time": { "from": "now-15m", "to": "now" },
+  "title": "Infrastructure & Containers",
+  "uid": "infrastructure"
+}

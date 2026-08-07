@@ -23,13 +23,27 @@ flowchart TD
 
 ---
 
-## 📚 Operational & CI/CD Documentation
+## 📚 Operational, Observability & CI/CD Documentation
+
+### 🔄 CI/CD & Operations
 
 - 🔄 [CI/CD Pipeline Architecture & 20-Stage Workflow](docs/CI_CD.md)
 - 🚀 [Deployment & Emergency Rollback Procedures](docs/DEPLOYMENT.md)
 - 💻 [Local Development & Testing Guide](docs/LOCAL_DEVELOPMENT.md)
 - 🔑 [Environment Variables Reference](docs/ENVIRONMENT_VARIABLES.md)
 - 🔒 [GitHub Repository Secrets Guide](docs/GITHUB_SECRETS.md)
+
+### 📊 Observability, Monitoring & SRE Runbooks
+
+- 📊 [Prometheus Metrics Catalogue](docs/MONITORING.md)
+- 🔔 [Alerting Rules & Escalation Matrix](docs/ALERTING.md)
+- 🖥️ [Grafana Dashboards Guide](docs/DASHBOARDS.md)
+- 🔍 [Log Observability & Sentry Context Tracing](docs/OBSERVABILITY.md)
+- 📈 [Capacity Planning & Infrastructure Estimation Guide](docs/CAPACITY_PLANNING.md)
+- 📖 [SRE Operational Runbook & Troubleshooting Playbook](docs/RUNBOOK.md)
+- 🚨 [Incident Response & Escalation Workflow](docs/INCIDENT_RESPONSE.md)
+- 📜 [Log Retention & Archival Strategy](docs/LOG_RETENTION.md)
+- 🎛 **Admin Operations Control Panel**: `http://localhost:3000/admin/operations`
 
 ---
 
