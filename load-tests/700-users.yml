@@ -1,5 +1,5 @@
 config:
-  target: "http://localhost:4000"
+  target: "https://empowering-laughter-production.up.railway.app"
 
   phases:
     - name: "Ramp to 700 Players"
@@ -25,7 +25,7 @@ scenarios:
       - emit:
           channel: "player:join"
           data:
-            pin: "999999"
+            pin: "473300"
             name: "Player{{ $randomString() }}"
 
       - think: 30
