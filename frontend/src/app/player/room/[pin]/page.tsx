@@ -303,13 +303,15 @@ export default function PlayerRoom() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white">
       {/* Top Navigation Bar */}
       <header className="px-6 py-4 bg-slate-900/80 border-b border-slate-800/80 backdrop-blur-xl flex justify-between items-center sticky top-0 z-20">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 uppercase tracking-widest font-black">
-              PIN: {pin}
-            </span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400 uppercase tracking-widest font-black">
+            PIN: {pin}
+          </span>
+
+          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
+            <Wifi className="w-3 h-3" />
+            Connected
+          </span>
         </div>
 
         <div className="flex items-center gap-2 sm:gap-4 text-xs font-extrabold shrink-0">
