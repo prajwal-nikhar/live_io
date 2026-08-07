@@ -19,7 +19,9 @@ const sockets: Socket[] = [];
 console.log(
   `==================================================================`,
 );
-console.log(`🔥 STARTING CONCURRENCY & SUB-200MS LATENCY AUDIT ON AURATIVE 🔥`);
+console.log(
+  `🔥 STARTING CONCURRENCY & SUB-200MS LATENCY AUDIT ON COGNITION | GIM 🔥`,
+);
 console.log(`• Targeting Backend: ${BACKEND_URL}`);
 console.log(`• Simulating: ${CONCURRENT_CLIENTS} simultaneous players`);
 console.log(

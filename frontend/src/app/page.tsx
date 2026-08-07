@@ -64,7 +64,7 @@ export default function LandingPage() {
             <Radio className="w-6 h-6 text-white animate-pulse" />
           </div>
           <span className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300">
-            AuraQuiz{" "}
+            Cognition | GIM{" "}
             <span className="text-xs px-2 py-0.5 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 rounded-full font-mono uppercase tracking-wider ml-1">
               PRO
             </span>

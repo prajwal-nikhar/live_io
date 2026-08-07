@@ -352,7 +352,7 @@ export default function HostRoom() {
                   </h1>
                   <p className="text-slate-400 text-xs max-w-md mx-auto">
                     Instruct participants to enter this PIN at{" "}
-                    <strong className="text-white">AuraQuiz</strong>
+                    <strong className="text-white">Cognition | GIM</strong>
                   </p>
                 </div>
 
@@ -686,15 +686,17 @@ export default function HostRoom() {
         title="Scan QR Code to Join"
       >
         <div className="text-center space-y-4">
-          <p className="text-xs text-slate-400">
-            Scan with your mobile camera to join PIN {pin} instantly
+          <p className="text-slate-400 text-xs max-w-md mx-auto">
+            Instruct participants to enter this PIN at{" "}
+            <strong className="text-white">Cognition | GIM</strong>
           </p>
-          <div className="inline-block p-4 bg-white rounded-2xl border border-slate-200 shadow-xl">
+
+          <div className="inline-block p-3 rounded-2xl bg-white border border-slate-100 shadow-xl mt-2">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${encodeURIComponent(
                 typeof window !== "undefined"
                   ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
-                  : `https://auraquiz.com/?pin=${pin}`,
+                  : `https://cognition-gim.com/?pin=${pin}`,
               )}`}
               alt="Join QR Code"
               className="w-48 h-48 mx-auto"

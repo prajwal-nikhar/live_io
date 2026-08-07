@@ -100,7 +100,7 @@ export default function AuthPage() {
           <Sparkles className="w-8 h-8 text-white" />
         </div>
         <h2 className="text-3xl font-extrabold tracking-tight">
-          AuraQuiz Portals
+          Cognition | GIM Portals
         </h2>
         <p className="text-slate-400 text-xs mt-1">
           Enterprise host and administrator access node

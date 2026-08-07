@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AuraQuiz — Real-Time Live Quiz Platform",
+  title: "Cognition | GIM — Real-Time Live Quiz Platform",
   description: "High-Performance, Real-Time Enterprise Engagement Platform",
+  applicationName: "Cognition | GIM",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
@@ -20,12 +21,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"
+        />
         <meta name="theme-color" content="#4f46e5" />
       </head>
-      <body className="antialiased min-h-screen">
-        {children}
-      </body>
+      <body className="antialiased min-h-screen">{children}</body>
     </html>
   );
 }

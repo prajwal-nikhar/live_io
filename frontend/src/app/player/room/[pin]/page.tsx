@@ -58,7 +58,7 @@ export default function PlayerRoom() {
 
   useEffect(() => {
     const socket = getSocket();
-    const storedDataStr = localStorage.getItem(`aura_quiz_player_${pin}`);
+    const storedDataStr = localStorage.getItem(`cognition_gim_player_${pin}`);
 
     async function initSession() {
       if (storedDataStr) {
@@ -89,7 +89,7 @@ export default function PlayerRoom() {
             if (queryName) {
               await attemptJoin(queryName);
             } else {
-              localStorage.removeItem(`aura_quiz_player_${pin}`);
+              localStorage.removeItem(`cognition_gim_player_${pin}`);
               router.push(`/?pin=${pin}`);
             }
           }
@@ -97,7 +97,7 @@ export default function PlayerRoom() {
           if (queryName) {
             await attemptJoin(queryName);
           } else {
-            localStorage.removeItem(`aura_quiz_player_${pin}`);
+            localStorage.removeItem(`cognition_gim_player_${pin}`);
             router.push(`/?pin=${pin}`);
           }
         }
@@ -123,7 +123,7 @@ export default function PlayerRoom() {
             name: p.name,
           };
           localStorage.setItem(
-            `aura_quiz_player_${pin}`,
+            `cognition_gim_player_${pin}`,
             JSON.stringify(saveData),
           );
           setPlayer(saveData);
@@ -348,7 +348,7 @@ export default function PlayerRoom() {
               <Button
                 variant="danger"
                 onClick={() => {
-                  localStorage.removeItem(`aura_quiz_player_${pin}`);
+                  localStorage.removeItem(`cognition_gim_player_${pin}`);
                   router.push(`/?pin=${pin}`);
                 }}
               >
@@ -504,7 +504,7 @@ export default function PlayerRoom() {
                 variant="glowing"
                 size="lg"
                 onClick={() => {
-                  localStorage.removeItem(`aura_quiz_player_${pin}`);
+                  localStorage.removeItem(`cognition_gim_player_${pin}`);
                   disconnectSocket();
                   router.push("/");
                 }}
@@ -520,7 +520,7 @@ export default function PlayerRoom() {
       <footer className="px-6 py-4 bg-slate-900/80 border-t border-slate-800/80 text-center">
         <p className="text-xs text-slate-500 font-mono flex items-center justify-center gap-1.5">
           <ShieldCheck className="w-4 h-4 text-emerald-400" /> Powered by
-          AuraQuiz Enterprise Real-Time Engine
+          Cognition | GIM Real-Time Engine
         </p>
       </footer>
     </div>

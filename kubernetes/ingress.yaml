@@ -9,7 +9,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   rules:
-  - host: auraquiz.enterprise.com
+  - host: cognition-gim.enterprise.com
     http:
       paths:
       - path: /

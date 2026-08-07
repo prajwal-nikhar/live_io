@@ -199,7 +199,7 @@ export default function HostDashboard() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <span className="font-black text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">
-              AuraQuiz Control
+              Cognition | GIM Control
             </span>
           </div>
 
