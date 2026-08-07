@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import { getSocket, emitWithTimeout, disconnectSocket } from "@/lib/socket";
 import {
@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import { Button } from "@/components/ui/Button";
 
-export default function PlayerRoom() {
+function PlayerRoomContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { pin } = useParams() as { pin: string };
@@ -534,5 +534,13 @@ export default function PlayerRoom() {
         </p>
       </footer>
     </div>
+  );
+}
+
+export default function PlayerRoom() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading room...</div>}>
+      <PlayerRoomContent />
+    </Suspense>
   );
 }

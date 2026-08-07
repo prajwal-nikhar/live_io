@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-export default function LandingPage() {
+function LandingPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlPin = searchParams?.get("pin") || "";
@@ -289,5 +289,13 @@ export default function LandingPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+export default function LandingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">Loading...</div>}>
+      <LandingPageContent />
+    </Suspense>
   );
 }
