@@ -81,6 +81,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
+      quizTitle: quiz.title,
       status: "LOBBY" as SessionState,
       currentQuestionIndex: 0,
       currentQuestionId: firstQuestion.id,
@@ -126,6 +127,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
+      quizTitle: session.quiz?.title || "Quiz Session",
       status: session.status as SessionState,
       currentQuestionIndex: currentIdx,
       currentQuestionId: currentQuestion ? currentQuestion.id : null,
@@ -360,6 +362,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
+      quizTitle: session.quiz.title,
       status: "QUESTION_ACTIVE" as SessionState,
       currentQuestionIndex: 0,
       currentQuestionId: firstQuestion.id,
@@ -372,6 +375,7 @@ export class RoomService {
       session,
       question: firstQuestion,
       remainingSeconds: firstQuestion.timeLimit,
+      quizTitle: session.quiz.title,
     };
   }
 
@@ -446,6 +450,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
+      quizTitle: session.quiz.title,
       status: "QUESTION_ACTIVE" as SessionState,
       currentQuestionIndex: nextIndex,
       currentQuestionId: nextQuestion.id,
@@ -461,6 +466,7 @@ export class RoomService {
       questionIndex: nextIndex,
       totalQuestions: questions.length,
       remainingSeconds: nextQuestion.timeLimit,
+      quizTitle: session.quiz.title,
     };
   }
 
@@ -784,6 +790,7 @@ export class RoomService {
     return {
       pin,
       status: room.status,
+      quizTitle: room.quizTitle || "Quiz Session",
       currentQuestionIndex: currentIdx,
       totalQuestions: questions.length,
       remainingSeconds,

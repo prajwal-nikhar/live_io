@@ -21,6 +21,7 @@ interface Question {
   type: 'MULTIPLE_CHOICE' | 'TRUE_FALSE';
   points: number;
   timeLimit: number;
+  imageUrl?: string | null;
   explanation?: string;
   options: Option[];
 }
@@ -44,6 +45,7 @@ export default function QuizEditor() {
   const [qType, setQType] = useState<'MULTIPLE_CHOICE' | 'TRUE_FALSE'>('MULTIPLE_CHOICE');
   const [qPoints, setQPoints] = useState(100);
   const [qTimeLimit, setQTimeLimit] = useState(20);
+  const [qImageUrl, setQImageUrl] = useState('');
   const [qExplanation, setQExplanation] = useState('');
   const [qOptions, setQOptions] = useState<Option[]>([
     { text: '', isCorrect: false },
@@ -84,6 +86,7 @@ export default function QuizEditor() {
     setQType('MULTIPLE_CHOICE');
     setQPoints(100);
     setQTimeLimit(20);
+    setQImageUrl('');
     setQExplanation('');
     setQOptions([
       { text: '', isCorrect: false },
@@ -100,6 +103,7 @@ export default function QuizEditor() {
     setQType(q.type);
     setQPoints(q.points);
     setQTimeLimit(q.timeLimit);
+    setQImageUrl(q.imageUrl || '');
     setQExplanation(q.explanation || '');
     setQOptions(q.options.map(o => ({ ...o })));
   };
@@ -163,6 +167,7 @@ export default function QuizEditor() {
         type: qType,
         points: Number(qPoints),
         timeLimit: Number(qTimeLimit),
+        imageUrl: qImageUrl || null,
         explanation: qExplanation,
         options: qOptions
       };
@@ -187,6 +192,18 @@ export default function QuizEditor() {
     } catch (err: any) {
       setError(err.message || 'Failed to save question.');
     }
+  };
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      if (evt.target?.result) {
+        setQImageUrl(evt.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleDeleteQuestion = async (qId: string) => {
@@ -215,30 +232,30 @@ export default function QuizEditor() {
   }
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 pb-20 relative overflow-hidden">
-      {/* Background elements */}
-      <div className="absolute top-[-30%] left-[-20%] w-[80%] h-[80%] bg-indigo-950/20 rounded-full blur-[160px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] bg-violet-950/20 rounded-full blur-[160px] pointer-events-none" />
-
-      {/* Top Banner */}
-      <header className="border-b border-slate-800/40 bg-slate-950/40 backdrop-blur-md sticky top-0 z-15">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 selection:bg-indigo-500 selection:text-white relative overflow-hidden">
+      {/* Background accents */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-900/10 blur-[150px] pointer-events-none rounded-full" />
+      
+      {/* Header */}
+      <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-30 pt-safe">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex justify-between items-center gap-3">
           <button 
             onClick={() => router.push('/host')}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-350 hover:text-white border border-slate-800 transition-colors"
+            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-xs font-bold shrink-0 touch-target"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to Dashboard</span>
+            <ArrowLeft className="w-4 h-4 shrink-0" />
+            <span className="hidden xs:inline">Back to Dashboard</span>
+            <span className="xs:hidden">Back</span>
           </button>
           
-          <div className="text-right">
-            <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">Quiz Editor</span>
-            <h1 className="text-lg font-extrabold text-slate-150 line-clamp-1">{quiz?.title}</h1>
+          <div className="text-right truncate">
+            <span className="text-[10px] sm:text-xs text-slate-500 font-bold uppercase tracking-wider block">Quiz Editor</span>
+            <h1 className="text-sm sm:text-lg font-extrabold text-slate-100 truncate max-w-[200px] sm:max-w-md">{quiz?.title}</h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8 relative z-10">
         
         {/* Left Side: Question List */}
         <div className="lg:col-span-2 space-y-6">
@@ -318,6 +335,20 @@ export default function QuizEditor() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Optional Question Image Thumbnail */}
+                  {q.imageUrl && (
+                    <div className="mt-3">
+                      <img
+                        src={q.imageUrl}
+                        alt="Question graphic"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = 'none';
+                        }}
+                        className="max-h-36 rounded-xl object-contain bg-slate-950 border border-slate-800 p-1"
+                      />
+                    </div>
+                  )}
 
                   {/* Options List */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
@@ -415,6 +446,66 @@ export default function QuizEditor() {
                       placeholder="e.g. Which logic gate outputs true if both inputs are false?"
                       className="w-full px-4 py-2.5 text-xs rounded-xl bg-slate-950 border border-slate-850 focus:border-indigo-500 focus:outline-none text-slate-200"
                     />
+                  </div>
+
+                  {/* Question Image Support */}
+                  <div className="space-y-2 p-3 bg-slate-950/60 rounded-xl border border-slate-850">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Question Image (Optional)
+                    </label>
+
+                    {qImageUrl ? (
+                      <div className="space-y-2 text-center">
+                        <div className="relative inline-block border border-slate-800 rounded-lg overflow-hidden max-h-32 bg-slate-900">
+                          <img
+                            src={qImageUrl}
+                            alt="Question Graphic Preview"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = 'none';
+                            }}
+                            className="max-h-32 mx-auto object-contain"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <label className="flex-1 py-1.5 bg-slate-900 hover:bg-slate-800 text-indigo-400 font-bold text-[11px] rounded-lg border border-slate-800 text-center cursor-pointer">
+                            Replace Image
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleImageFileUpload}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setQImageUrl('')}
+                            className="flex-1 py-1.5 bg-rose-950/30 hover:bg-rose-900/40 text-rose-400 font-bold text-[11px] rounded-lg border border-rose-900/50"
+                          >
+                            Remove Image
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="text-[11px] text-slate-500 italic">No image selected</p>
+                        <input
+                          type="text"
+                          value={qImageUrl}
+                          onChange={(e) => setQImageUrl(e.target.value)}
+                          placeholder="Paste Image URL (e.g. https://...)"
+                          className="w-full px-3 py-1.5 text-xs rounded-lg bg-slate-900 border border-slate-800 text-slate-200 focus:border-indigo-500 focus:outline-none"
+                        />
+                        <label className="block w-full py-2 bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 font-bold text-xs rounded-lg border border-indigo-500/30 text-center cursor-pointer">
+                          Upload Image File
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageFileUpload}
+                          />
+                        </label>
+                      </div>
+                    )}
                   </div>
 
                   {/* Options Settings */}

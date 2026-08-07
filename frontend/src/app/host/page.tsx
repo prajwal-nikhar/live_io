@@ -259,6 +259,12 @@ export default function HostDashboard() {
     const errors: string[] = [];
     let skipped = 0;
 
+    let headerCols: string[] = [];
+    let imageColIdx = -1;
+    let timeLimitColIdx = -1;
+    let pointsColIdx = -1;
+    let explanationColIdx = -1;
+
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i].trim();
       if (!rawLine) continue;
@@ -275,7 +281,17 @@ export default function HostDashboard() {
         firstCol.startsWith("prompt") ||
         firstCol === "question text"
       ) {
-        continue; // Skip CSV Header Row
+        // Detect column positions from header row if available
+        headerCols = columns.map((c) => c.toLowerCase());
+        imageColIdx = headerCols.findIndex(
+          (c) => c === "image" || c === "imageurl" || c === "img" || c === "picture",
+        );
+        timeLimitColIdx = headerCols.findIndex(
+          (c) => c.includes("time") || c.includes("timer") || c.includes("limit"),
+        );
+        pointsColIdx = headerCols.findIndex((c) => c.includes("point"));
+        explanationColIdx = headerCols.findIndex((c) => c.includes("explain"));
+        continue; // Skip Header Line
       }
 
       const questionText = columns[0];
@@ -321,15 +337,66 @@ export default function HostDashboard() {
         isCorrect: idx === correctIdx,
       }));
 
-      const timeLimit = parseInt(columns[6]) || 20;
-      const points = parseInt(columns[7]) || 100;
-      const explanation = columns[8] || "";
+      // Parse Optional Image Column
+      let imageUrl: string | null = null;
+      if (imageColIdx !== -1 && columns[imageColIdx]) {
+        const val = columns[imageColIdx].trim();
+        if (val && val.toLowerCase() !== "(blank)" && val.toLowerCase() !== "blank") {
+          imageUrl = val;
+        }
+      } else if (columns[6]) {
+        // Fallback positional check if column 6 is an image path/URL or if columns[6] is non-numeric
+        const col6Val = columns[6].trim();
+        if (
+          col6Val &&
+          col6Val.toLowerCase() !== "(blank)" &&
+          col6Val.toLowerCase() !== "blank" &&
+          (col6Val.startsWith("http") ||
+            col6Val.startsWith("/") ||
+            col6Val.startsWith("data:") ||
+            /\.(png|jpg|jpeg|gif|webp|svg)/i.test(col6Val) ||
+            isNaN(Number(col6Val)))
+        ) {
+          imageUrl = col6Val;
+        }
+      }
+
+      // Parse TimeLimit, Points, Explanation
+      const timeLimitVal =
+        timeLimitColIdx !== -1 && columns[timeLimitColIdx]
+          ? parseInt(columns[timeLimitColIdx])
+          : imageColIdx !== -1 && columns[6]
+            ? parseInt(columns[6])
+            : imageUrl && columns[7]
+              ? parseInt(columns[7])
+              : parseInt(columns[6]);
+      const timeLimit = isNaN(timeLimitVal) || !timeLimitVal ? 20 : timeLimitVal;
+
+      const pointsVal =
+        pointsColIdx !== -1 && columns[pointsColIdx]
+          ? parseInt(columns[pointsColIdx])
+          : imageColIdx !== -1 && columns[7]
+            ? parseInt(columns[7])
+            : imageUrl && columns[8]
+              ? parseInt(columns[8])
+              : parseInt(columns[7]);
+      const points = isNaN(pointsVal) || !pointsVal ? 100 : pointsVal;
+
+      const explanation =
+        explanationColIdx !== -1 && columns[explanationColIdx]
+          ? columns[explanationColIdx]
+          : imageColIdx !== -1 && columns[8]
+            ? columns[8]
+            : imageUrl && columns[9]
+              ? columns[9]
+              : columns[8] || "";
 
       questions.push({
         text: questionText,
         type: isTrueFalse ? "TRUE_FALSE" : "MULTIPLE_CHOICE",
         points,
         timeLimit,
+        imageUrl,
         explanation,
         options,
       });
@@ -384,7 +451,7 @@ export default function HostDashboard() {
 
       if (parsed.questions.length === 0) {
         throw new Error(
-          "No valid question rows found in CSV. Expected headers: Question, Option A, Option B, Option C, Option D, Correct Option (A/B/C/D)",
+          "No valid question rows found in CSV. Expected headers: Question, Option A, Option B, Option C, Option D, Correct Option (A/B/C/D), Image",
         );
       }
 
@@ -428,10 +495,10 @@ export default function HostDashboard() {
     setImportReport(null);
   };
 
-  // Export Quiz to CSV
+  // Export Quiz to CSV (With Image column)
   const handleExportCsv = (quiz: any) => {
     let csvContent =
-      "Question,Option A,Option B,Option C,Option D,Correct Option,Time Limit,Points,Explanation\n";
+      "Question,Option A,Option B,Option C,Option D,Correct Option,Image,Time Limit,Points,Explanation\n";
 
     quiz.questions.forEach((q: any) => {
       const opts = q.options || [];
@@ -453,9 +520,10 @@ export default function HostDashboard() {
               : "D";
 
       const qText = `"${(q.text || "").replace(/"/g, '""')}"`;
+      const imageCol = q.imageUrl ? `"${q.imageUrl.replace(/"/g, '""')}"` : "";
       const explanation = `"${(q.explanation || "").replace(/"/g, '""')}"`;
 
-      csvContent += `${qText},${optA},${optB},${optC},${optD},${correctChoice},${q.timeLimit || 20},${q.points || 100},${explanation}\n`;
+      csvContent += `${qText},${optA},${optB},${optC},${optD},${correctChoice},${imageCol},${q.timeLimit || 20},${q.points || 100},${explanation}\n`;
     });
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -550,48 +618,49 @@ export default function HostDashboard() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-20 selection:bg-indigo-500 selection:text-white">
       {/* Navigation Header */}
-      <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <header className="border-b border-slate-800/80 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-30 pt-safe">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex justify-between items-center gap-3">
           <div
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer truncate"
             onClick={() => router.push("/")}
           >
-            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-white shrink-0" />
             </div>
-            <div>
-              <h1 className="font-black text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300">
-                Cognition | GIM Quiz Platform
+            <div className="truncate">
+              <h1 className="font-black text-base sm:text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300 truncate">
+                Cognition | GIM
               </h1>
-              <p className="text-[11px] text-slate-400 font-medium">
-                Create, manage and host live quizzes.
+              <p className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">
+                Create, manage & host live quizzes
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push("/admin/operations")}
-              leftIcon={<Activity className="w-4 h-4 text-emerald-400" />}
+              leftIcon={<Activity className="w-4 h-4 text-emerald-400 shrink-0" />}
             >
-              SRE Ops
+              <span className="hidden sm:inline">SRE Ops</span>
+              <span className="sm:hidden">Ops</span>
             </Button>
             <div className="hidden md:block text-right border-l border-slate-800 pl-3">
-              <p className="text-sm font-extrabold text-slate-100">
+              <p className="text-sm font-extrabold text-slate-100 truncate">
                 {user?.name}
               </p>
-              <p className="text-xs text-indigo-400 capitalize">
+              <p className="text-xs text-indigo-400 capitalize truncate">
                 {user?.role || "Host"}
               </p>
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800 inline-flex items-center justify-center"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800 inline-flex items-center justify-center shrink-0 touch-target"
               title="Sign Out"
             >
-              <LogOut className="w-5 h-5" />
+              <LogOut className="w-5 h-5 shrink-0" />
             </button>
           </div>
         </div>

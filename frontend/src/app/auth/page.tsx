@@ -111,15 +111,49 @@ export default function AuthPage() {
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg glass rounded-3xl p-8 sm:p-10 shadow-2xl relative z-10 border border-white/5"
+        className="w-full max-w-md glass rounded-3xl p-6 sm:p-10 shadow-2xl relative z-10 border border-white/5 my-auto"
       >
-        {/* Title instead of tab switcher */}
-        <div className="mb-8 text-center">
-          <h3 className="text-xl font-bold text-slate-100">
-            Sign In to Dashboard
+        {/* Tab Switcher */}
+        <div className="flex bg-slate-900/80 p-1 rounded-2xl border border-slate-800 mb-6">
+          <button
+            type="button"
+            onClick={() => {
+              setTab("LOGIN");
+              setError("");
+            }}
+            className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+              tab === "LOGIN"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Sign In
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTab("REGISTER");
+              setError("");
+            }}
+            className={`flex-1 py-2.5 text-xs sm:text-sm font-bold rounded-xl transition-all ${
+              tab === "REGISTER"
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            Register Host
+          </button>
+        </div>
+
+        {/* Title */}
+        <div className="mb-6 text-center">
+          <h3 className="text-lg sm:text-xl font-bold text-slate-100">
+            {tab === "LOGIN" ? "Sign In to Dashboard" : "Create Host Account"}
           </h3>
           <p className="text-slate-400 text-xs mt-1">
-            Access to host and manage events
+            {tab === "LOGIN"
+              ? "Access to host and manage live quizzes"
+              : "Register as a quiz host for your organization"}
           </p>
         </div>
 

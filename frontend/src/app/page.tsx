@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Sparkles,
@@ -22,11 +22,21 @@ import { Card } from "@/components/ui/Card";
 
 export default function LandingPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlPin = searchParams?.get("pin") || "";
+
   const [pin, setPin] = useState("");
   const [nickname, setNickname] = useState("");
   const [step, setStep] = useState<"pin" | "nickname">("pin");
   const [error, setError] = useState("");
   const [isJoining, setIsJoining] = useState(false);
+
+  useEffect(() => {
+    if (urlPin && urlPin.length >= 6) {
+      setPin(urlPin);
+      setStep("nickname");
+    }
+  }, [urlPin]);
 
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,68 +68,68 @@ export default function LandingPage() {
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-indigo-900/20 blur-[140px] pointer-events-none rounded-full" />
 
       {/* Header Bar */}
-      <header className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/30">
-            <Radio className="w-6 h-6 text-white animate-pulse" />
+      <header className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6 flex items-center justify-between relative z-10 pt-safe">
+        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+          <div className="p-2 sm:p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/30 shrink-0">
+            <Radio className="w-5 h-5 sm:w-6 sm:h-6 text-white animate-pulse shrink-0" />
           </div>
-          <span className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300">
+          <span className="text-lg sm:text-2xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-indigo-300 truncate">
             Cognition | GIM{" "}
-            <span className="text-xs px-2 py-0.5 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 rounded-full font-mono uppercase tracking-wider ml-1">
+            <span className="hidden xs:inline-block text-xs px-2 py-0.5 bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 rounded-full font-mono uppercase tracking-wider ml-1">
               PRO
             </span>
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={() => router.push("/auth")}>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <Button variant="ghost" size="sm" onClick={() => router.push("/auth")}>
             Host Login
           </Button>
-          <Button variant="glowing" onClick={() => router.push("/host")}>
+          <Button variant="glowing" size="sm" onClick={() => router.push("/host")}>
             Create Quiz
           </Button>
         </div>
       </header>
 
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 sm:pt-12 pb-16 sm:pb-24 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
         {/* Left Column: Headline & Hero Info */}
         <motion.div
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="lg:col-span-7 space-y-6 text-center lg:text-left"
+          className="lg:col-span-7 space-y-4 sm:space-y-6 text-center lg:text-left"
         >
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/30 text-xs font-semibold text-indigo-300 shadow-md backdrop-blur-md">
-            <Sparkles className="w-4 h-4 text-cyan-400" />
+          <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-slate-900/90 border border-indigo-500/30 text-[11px] sm:text-xs font-semibold text-indigo-300 shadow-md backdrop-blur-md">
+            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 shrink-0" />
             <span>Next-Generation Real-Time Interactive Platform</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.15] text-white">
             Engage Audiences with{" "}
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400">
               Instant Real-Time Quizzes
             </span>
           </h1>
 
-          <p className="text-slate-300 text-lg sm:text-xl font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed">
+          <p className="text-slate-300 text-base sm:text-xl font-medium max-w-2xl mx-auto lg:mx-0 leading-relaxed">
             Ultra-fast Kahoot & Slido tier real-time quiz platform. Powered by
             Socket.IO clustering, sub-200ms latency, and enterprise
             observability.
           </p>
 
           {/* Key Feature Bullets */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-sm font-semibold text-slate-300">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-2 sm:pt-4 text-xs sm:text-sm font-semibold text-slate-300">
             <div className="flex items-center justify-center lg:justify-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
               <span>Up to 1,000+ Players</span>
             </div>
             <div className="flex items-center justify-center lg:justify-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-cyan-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-400 shrink-0" />
               <span>Sub-200ms Updates</span>
             </div>
             <div className="flex items-center justify-center lg:justify-start gap-2">
-              <CheckCircle2 className="w-5 h-5 text-indigo-400 shrink-0" />
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400 shrink-0" />
               <span>Zero Connection Drops</span>
             </div>
           </div>
@@ -134,13 +144,13 @@ export default function LandingPage() {
         >
           <Card
             variant="glass"
-            className="p-8 border-indigo-500/30 shadow-2xl shadow-indigo-500/10"
+            className="p-5 sm:p-8 border-indigo-500/30 shadow-2xl shadow-indigo-500/10"
           >
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 bg-indigo-500/10 rounded-2xl border border-indigo-500/30 flex items-center justify-center mx-auto mb-3 text-indigo-400 shadow-inner">
-                <Play className="w-6 h-6 ml-0.5 fill-indigo-400" />
+            <div className="text-center mb-5 sm:mb-6">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-indigo-500/10 rounded-2xl border border-indigo-500/30 flex items-center justify-center mx-auto mb-2.5 sm:mb-3 text-indigo-400 shadow-inner shrink-0">
+                <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-indigo-400 shrink-0" />
               </div>
-              <h2 className="text-2xl font-black text-white">Join Live Game</h2>
+              <h2 className="text-xl sm:text-2xl font-black text-white">Join Live Game</h2>
               <p className="text-xs text-slate-400 mt-1">
                 Enter your 6-digit Game PIN to enter the lobby
               </p>
@@ -151,14 +161,23 @@ export default function LandingPage() {
                 <div>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="one-time-code"
                     maxLength={6}
                     placeholder="GAME PIN"
                     value={pin}
+                    onFocus={(e) =>
+                      e.target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      })
+                    }
                     onChange={(e) => {
                       setPin(e.target.value.replace(/\D/g, ""));
                       setError("");
                     }}
-                    className="w-full text-center text-3xl tracking-[0.3em] font-black py-4 bg-slate-950 border border-slate-800 rounded-2xl text-indigo-300 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 uppercase"
+                    className="w-full text-center text-2xl sm:text-3xl tracking-[0.2em] sm:tracking-[0.3em] font-black py-3.5 sm:py-4 bg-slate-950 border border-slate-800 rounded-2xl text-indigo-300 placeholder:text-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/20 uppercase"
                   />
                   {error && (
                     <p className="text-xs text-rose-400 font-medium text-center mt-2">
@@ -179,6 +198,12 @@ export default function LandingPage() {
                     maxLength={20}
                     placeholder="YOUR NICKNAME"
                     value={nickname}
+                    onFocus={(e) =>
+                      e.target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      })
+                    }
                     onChange={(e) => {
                       setNickname(e.target.value);
                       setError("");

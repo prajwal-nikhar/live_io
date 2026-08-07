@@ -309,22 +309,17 @@ export default function PlayerRoom() {
               PIN: {pin}
             </span>
             <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold flex items-center gap-1">
-              <Wifi className="w-3 h-3 text-emerald-400" /> LIVE
-            </span>
           </div>
-          <h2 className="text-sm font-extrabold text-indigo-300 mt-0.5">
-            {player?.name || "Participant"}
-          </h2>
         </div>
 
-        <div className="flex items-center gap-4 text-xs font-extrabold">
-          <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-full shadow-md">
-            <Award className="w-4 h-4 text-amber-400" />
+        <div className="flex items-center gap-2 sm:gap-4 text-xs font-extrabold shrink-0">
+          <div className="flex items-center gap-1.5 bg-amber-500/10 text-amber-300 border border-amber-500/30 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full shadow-md shrink-0">
+            <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
             <span>{score} pts</span>
           </div>
           {streak > 0 && (
-            <div className="flex items-center gap-1 bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2.5 py-1 rounded-full shadow-md">
-              <Flame className="w-4 h-4 text-orange-500 fill-orange-500 animate-pulse" />
+            <div className="flex items-center gap-1 bg-orange-500/10 text-orange-400 border border-orange-500/30 px-2 py-1 rounded-full shadow-md shrink-0">
+              <Flame className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 fill-orange-500 animate-pulse shrink-0" />
               <span>x{streak}</span>
             </div>
           )}
@@ -332,7 +327,7 @@ export default function PlayerRoom() {
       </header>
 
       {/* Main Real-Time Quiz Stage */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6 w-full max-w-xl mx-auto">
+      <main className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 w-full max-w-xl mx-auto">
         <AnimatePresence mode="wait">
           {reconnectError && (
             <motion.div
@@ -402,31 +397,44 @@ export default function PlayerRoom() {
                 </div>
 
                 {/* Question Prompt */}
-                <div className="text-center bg-slate-900/80 border border-slate-800 p-6 rounded-2xl shadow-xl">
-                  <h3 className="font-extrabold text-xl sm:text-2xl text-white leading-snug">
+                <div className="text-center bg-slate-900/80 border border-slate-800 p-4 sm:p-6 rounded-2xl shadow-xl space-y-2 sm:space-y-3">
+                  <h3 className="font-extrabold text-lg sm:text-2xl text-white leading-snug">
                     {currentQuestion.text}
                   </h3>
+
+                  {currentQuestion.imageUrl && (
+                    <div className="flex justify-center pt-1">
+                      <img
+                        src={currentQuestion.imageUrl}
+                        alt="Question graphic"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                        }}
+                        className="max-h-32 sm:max-h-48 rounded-xl object-contain border border-slate-800 bg-slate-950 p-1 shadow-lg"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {/* Kahoot-Style Vibrant Answer Buttons */}
+                {/* Kahoot-Style 2x2 Vibrant Answer Buttons (Zero Scroll Mobile Ergonomics) */}
                 {!hasAnswered ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-4 pt-1">
                     {currentQuestion.options?.map((o: any, idx: number) => {
                       const style = optionShapes[idx % 4];
                       return (
                         <button
                           key={o.id}
                           onClick={() => handleSelectOption(o.id)}
-                          className={`p-6 rounded-2xl border ${style.color} shadow-lg transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] text-left flex items-center gap-4 group cursor-pointer focus:outline-none focus:ring-4 focus:ring-indigo-500/50`}
+                          className={`p-3.5 sm:p-5 rounded-2xl border ${style.color} shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] text-left flex items-center gap-2.5 sm:gap-4 group cursor-pointer focus:outline-none focus:ring-4 focus:ring-indigo-500/50 min-h-[64px] touch-target`}
                         >
-                          <div className="p-2.5 rounded-xl bg-black/20 shrink-0">
+                          <div className="p-2 sm:p-2.5 rounded-xl bg-black/20 shrink-0">
                             {style.icon}
                           </div>
-                          <div className="flex-1">
-                            <div className="text-[10px] uppercase font-mono tracking-widest opacity-80 mb-0.5">
-                              Press {idx + 1}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[9px] sm:text-[10px] uppercase font-mono tracking-widest opacity-80 mb-0.5">
+                              Option {String.fromCharCode(65 + idx)}
                             </div>
-                            <span className="font-extrabold text-base sm:text-lg leading-snug block">
+                            <span className="font-extrabold text-xs sm:text-base leading-snug block truncate">
                               {o.text}
                             </span>
                           </div>
@@ -435,9 +443,9 @@ export default function PlayerRoom() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center p-10 bg-indigo-500/10 border border-indigo-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
-                    <CheckCircle className="w-14 h-14 text-indigo-400 mx-auto animate-pulse" />
-                    <h4 className="font-black text-2xl text-white">
+                  <div className="text-center p-6 sm:p-10 bg-indigo-500/10 border border-indigo-500/30 rounded-3xl space-y-3 shadow-2xl backdrop-blur-xl">
+                    <CheckCircle className="w-10 h-10 sm:w-14 sm:h-14 text-indigo-400 mx-auto animate-pulse" />
+                    <h4 className="font-black text-xl sm:text-2xl text-white">
                       Answer Locked In!
                     </h4>
                     <p className="text-xs text-slate-400">

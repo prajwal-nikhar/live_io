@@ -22,6 +22,11 @@ import {
   UserX,
   Copy,
   CheckCircle2,
+  Triangle,
+  Diamond,
+  Circle,
+  Square,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
@@ -36,10 +41,12 @@ export default function HostRoom() {
 
   const [players, setPlayers] = useState<any[]>([]);
   const [sessionState, setSessionState] = useState<string>("LOBBY");
+  const [quizTitle, setQuizTitle] = useState<string>("Cognition Fun Quiz");
   const [currentQuestion, setCurrentQuestion] = useState<any>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [totalQuestions, setTotalQuestions] = useState<number>(1);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(0);
+  const [liveProgress, setLiveProgress] = useState<any>(null);
   const [stats, setStats] = useState<any>(null);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [chatMessages, setChatMessages] = useState<any[]>([]);
@@ -67,6 +74,7 @@ export default function HostRoom() {
     setPlayers([]);
     setLeaderboard([]);
     setStats(null);
+    setLiveProgress(null);
     setCurrentQuestion(null);
     setErrorMsg(null);
 
@@ -82,6 +90,7 @@ export default function HostRoom() {
     function applySyncState(sync: any) {
       if (!sync) return;
       setSessionState(sync.status);
+      if (sync.quizTitle) setQuizTitle(sync.quizTitle);
       setCurrentQuestionIndex(sync.currentQuestionIndex || 0);
       setTotalQuestions(sync.totalQuestions || 1);
       setRemainingSeconds(sync.remainingSeconds || 0);
@@ -102,11 +111,19 @@ export default function HostRoom() {
 
     socket.on("question:start", (data: any) => {
       setSessionState("QUESTION_ACTIVE");
+      if (data.quizTitle) setQuizTitle(data.quizTitle);
       setCurrentQuestion(data.question);
       setCurrentQuestionIndex(data.questionIndex || 0);
       setTotalQuestions(data.totalQuestions || 1);
       setRemainingSeconds(data.remainingSeconds || 20);
+      setLiveProgress(null);
       setStats(null);
+    });
+
+    socket.on("answer:progress", (data: any) => {
+      if (data) {
+        setLiveProgress(data);
+      }
     });
 
     socket.on("question:skip", (data: any) => {
@@ -151,6 +168,7 @@ export default function HostRoom() {
       socket.off("lobby_update");
       socket.off("session:sync");
       socket.off("question:start");
+      socket.off("answer:progress");
       socket.off("question:skip");
       socket.off("answer:reveal");
       socket.off("leaderboard:update");
@@ -298,17 +316,18 @@ export default function HostRoom() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setShowQrModal(true)}
           >
-            <QrCode className="w-4 h-4 mr-1 text-cyan-400" /> Show QR
+            <QrCode className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="hidden xs:inline ml-1">Show QR</span>
           </Button>
-          <span className="text-slate-300 text-xs flex items-center gap-1.5 font-bold">
-            <Users className="w-4 h-4 text-indigo-400" />
-            <span>{players.length} Joined</span>
+          <span className="text-slate-300 text-xs flex items-center gap-1.5 font-bold shrink-0">
+            <Users className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span>{players.length} <span className="hidden xs:inline">Joined</span></span>
           </span>
           <Button
             variant="secondary"
@@ -318,20 +337,20 @@ export default function HostRoom() {
               router.push("/host");
             }}
           >
-            Exit Session
+            Exit
           </Button>
         </div>
       </header>
 
       {errorMsg && (
-        <div className="bg-rose-500/10 border-b border-rose-500/30 px-6 py-2 text-center text-xs text-rose-400 font-bold flex items-center justify-center gap-2">
-          <ShieldAlert className="w-4 h-4" />
+        <div className="bg-rose-500/10 border-b border-rose-500/30 px-4 py-2 text-center text-xs text-rose-400 font-bold flex items-center justify-center gap-2">
+          <ShieldAlert className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {/* Main Host Interface */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-6 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8 relative z-10">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8 relative z-10">
         <div className="lg:col-span-3 flex flex-col justify-between space-y-8 min-h-[70vh]">
           <AnimatePresence mode="wait">
             {/* LOBBY STATE */}
@@ -343,17 +362,41 @@ export default function HostRoom() {
                 exit={{ opacity: 0 }}
                 className="space-y-8 flex-1 flex flex-col justify-center"
               >
-                <div className="text-center space-y-3">
-                  <p className="text-indigo-400 text-xs font-black uppercase tracking-widest">
-                    Join Game PIN
-                  </p>
-                  <h1 className="text-6xl sm:text-7xl font-black tracking-widest text-white animate-pulse">
-                    {pin}
-                  </h1>
-                  <p className="text-slate-400 text-xs max-w-md mx-auto">
-                    Instruct participants to enter this PIN at{" "}
-                    <strong className="text-white">Cognition | GIM</strong>
-                  </p>
+                {/* Room PIN & Large QR Code Display Simultaneously */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-slate-900/60 border border-slate-800 p-8 rounded-3xl backdrop-blur-xl shadow-2xl">
+                  {/* Left: Game PIN & Join URL */}
+                  <div className="text-center space-y-4">
+                    <p className="text-indigo-400 text-xs font-black uppercase tracking-widest">
+                      ROOM PIN
+                    </p>
+                    <h1 className="text-5xl sm:text-6xl font-black tracking-widest text-white animate-pulse">
+                      {pin}
+                    </h1>
+                    <p className="text-slate-400 text-xs max-w-xs mx-auto leading-relaxed">
+                      or visit{" "}
+                      <strong className="text-indigo-300 font-extrabold">
+                        cognition-gim.com
+                      </strong>
+                    </p>
+                  </div>
+
+                  {/* Right: Simultaneous Large QR Code */}
+                  <div className="text-center space-y-2 border-t md:border-t-0 md:border-l border-slate-800 pt-6 md:pt-0 md:pl-8">
+                    <p className="text-xs font-black text-cyan-400 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                      <QrCode className="w-4 h-4" /> Scan to Join Instantly
+                    </p>
+                    <div className="inline-block p-3 rounded-2xl bg-white border border-slate-100 shadow-xl my-2">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                          typeof window !== "undefined"
+                            ? `${window.location.protocol}//${window.location.host}/?pin=${pin}`
+                            : `https://cognition-gim.com/?pin=${pin}`,
+                        )}`}
+                        alt="Join QR Code"
+                        className="w-36 h-36 sm:w-44 sm:h-44 mx-auto"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 {/* Player Grid with Kick Action */}
@@ -406,7 +449,7 @@ export default function HostRoom() {
               </motion.div>
             )}
 
-            {/* QUESTION ACTIVE STATE */}
+            {/* QUESTION ACTIVE STATE – KAHOOT HOST PRESENTATION */}
             {sessionState === "QUESTION_ACTIVE" && currentQuestion && (
               <motion.div
                 key="playing-step"
@@ -415,32 +458,146 @@ export default function HostRoom() {
                 exit={{ opacity: 0 }}
                 className="space-y-6 flex-1 flex flex-col justify-between"
               >
-                <div className="text-center space-y-2">
+                {/* Header Info: Quiz Title & Question Number */}
+                <div className="flex flex-col sm:flex-row justify-between items-center bg-slate-900/80 border border-slate-800 px-6 py-3 rounded-2xl gap-2">
+                  <div className="text-xs font-black text-indigo-400 uppercase tracking-wider">
+                    Quiz: <span className="text-white">{quizTitle}</span>
+                  </div>
                   <Badge variant="info">
-                    Question {currentQuestionIndex + 1} of {totalQuestions}
+                    Question {currentQuestionIndex + 1} / {totalQuestions}
                   </Badge>
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 max-w-3xl mx-auto leading-snug">
+                </div>
+
+                {/* Question Prompt & Optional Image */}
+                <div className="text-center space-y-4">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-100 max-w-4xl mx-auto leading-snug">
                     {currentQuestion.text}
                   </h2>
+
+                  {/* Optional Question Image */}
+                  {currentQuestion.imageUrl && (
+                    <div className="my-3 flex justify-center">
+                      <img
+                        src={currentQuestion.imageUrl}
+                        alt="Question graphic"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                        }}
+                        className="max-h-52 rounded-2xl object-contain border border-slate-800 bg-slate-950 p-2 shadow-2xl"
+                      />
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex justify-center my-4">
-                  <div className="relative w-36 h-36 flex items-center justify-center rounded-full bg-slate-900 border-4 border-indigo-500/40 shadow-2xl">
-                    <span className="text-5xl font-black text-indigo-400">
-                      {remainingSeconds}
-                    </span>
+                {/* 4 Kahoot-style Colored Answer Option Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {currentQuestion.options?.map((o: any, idx: number) => {
+                    const shapes = [
+                      {
+                        label: "🔴 ▲",
+                        color:
+                          "bg-rose-600/90 border-rose-500/80 text-white shadow-rose-600/20",
+                        icon: <Triangle className="w-5 h-5 fill-current shrink-0" />,
+                        barBg: "bg-rose-400",
+                      },
+                      {
+                        label: "🔵 ◆",
+                        color:
+                          "bg-blue-600/90 border-blue-500/80 text-white shadow-blue-600/20",
+                        icon: <Diamond className="w-5 h-5 fill-current shrink-0" />,
+                        barBg: "bg-blue-400",
+                      },
+                      {
+                        label: "🟡 ●",
+                        color:
+                          "bg-amber-500/90 border-amber-400/80 text-slate-950 shadow-amber-500/20",
+                        icon: <Circle className="w-5 h-5 fill-current shrink-0" />,
+                        barBg: "bg-amber-300",
+                      },
+                      {
+                        label: "🟢 ■",
+                        color:
+                          "bg-emerald-600/90 border-emerald-500/80 text-white shadow-emerald-600/20",
+                        icon: <Square className="w-5 h-5 fill-current shrink-0" />,
+                        barBg: "bg-emerald-400",
+                      },
+                    ];
+                    const style = shapes[idx % 4];
+
+                    const totalResponses = liveProgress?.totalResponses || 0;
+                    const optCount =
+                      liveProgress?.options?.find((opt: any) => opt.id === o.id)
+                        ?.count || 0;
+                    const percentage =
+                      totalResponses > 0
+                        ? Math.round((optCount / totalResponses) * 100)
+                        : 0;
+
+                    return (
+                      <div
+                        key={o.id}
+                        className={`p-5 rounded-2xl border ${style.color} shadow-xl flex flex-col justify-between space-y-3 transition-all`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-black/20">
+                              {style.icon}
+                            </div>
+                            <span className="font-extrabold text-base leading-snug">
+                              {o.text}
+                            </span>
+                          </div>
+                          <span className="text-xs font-black px-2.5 py-1 rounded-full bg-black/30 shrink-0">
+                            {optCount} ({percentage}%)
+                          </span>
+                        </div>
+
+                        {/* Live Distribution Bar */}
+                        <div className="w-full h-2.5 bg-black/30 rounded-full overflow-hidden">
+                          <div
+                            style={{ width: `${percentage}%` }}
+                            className={`h-full ${style.barBg} transition-all duration-500 rounded-full`}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Bottom Bar: Live Progress Metrics & Timer */}
+                <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-900/90 border border-slate-800 px-6 py-4 rounded-2xl">
+                  <div className="flex items-center gap-6 text-sm font-extrabold">
+                    <div className="flex items-center gap-2 text-indigo-300">
+                      <Users className="w-4 h-4 text-indigo-400" />
+                      <span>
+                        Answered:{" "}
+                        <strong className="text-white">
+                          {liveProgress?.totalResponses || 0} /{" "}
+                          {liveProgress?.totalPlayers || players.length || 1}
+                        </strong>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-cyan-300">
+                      <Clock className="w-4 h-4 text-cyan-400 animate-pulse" />
+                      <span>
+                        Time Left:{" "}
+                        <strong className="text-white">
+                          {remainingSeconds} seconds
+                        </strong>
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="pt-4 flex justify-center gap-3">
-                  <Button variant="secondary" onClick={handleSkipQuestion}>
-                    <FastForward className="w-4 h-4 mr-1.5 text-amber-400" />{" "}
-                    Skip Question
-                  </Button>
-
-                  <Button variant="primary" onClick={handleShowAnswer}>
-                    <Eye className="w-4 h-4 mr-1.5" /> Show Answer Statistics
-                  </Button>
+                  <div className="flex items-center gap-3">
+                    <Button variant="secondary" size="sm" onClick={handleSkipQuestion}>
+                      <FastForward className="w-4 h-4 mr-1.5 text-amber-400" />{" "}
+                      Skip Question
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={handleShowAnswer}>
+                      <Eye className="w-4 h-4 mr-1.5" /> Show Statistics
+                    </Button>
+                  </div>
                 </div>
               </motion.div>
             )}

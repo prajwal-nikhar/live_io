@@ -91,17 +91,17 @@ export default function AdminOperationsPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 font-sans pt-safe pb-safe selection:bg-indigo-500 selection:text-white">
       {/* Header */}
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-center pb-6 border-b border-slate-800 gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <Activity className="w-8 h-8 text-indigo-400 animate-pulse" />
-            <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <Activity className="w-7 h-7 sm:w-8 sm:h-8 text-indigo-400 animate-pulse shrink-0" />
+            <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">
               Live Operations Control Panel
             </h1>
           </div>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-400 text-xs sm:text-sm mt-1">
             Enterprise Real-Time Telemetry & System Diagnostics • Refreshed at{" "}
             {ops.lastUpdated}
           </p>
@@ -110,10 +110,10 @@ export default function AdminOperationsPage() {
         <button
           onClick={fetchStatus}
           disabled={loading}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg font-medium shadow-lg transition-all disabled:opacity-50"
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg transition-all disabled:opacity-50 touch-target shrink-0"
         >
-          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh Diagnostics
+          <RefreshCw className={`w-4 h-4 shrink-0 ${loading ? "animate-spin" : ""}`} />
+          <span>Refresh Diagnostics</span>
         </button>
       </div>
 

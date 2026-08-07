@@ -12,11 +12,34 @@
   --foreground: #f8fafc;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   transition: background-color 0.3s ease, color 0.3s ease;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+/* Safe area inset support for mobile devices (Notch / Dynamic Island / Gesture Bar) */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pl-safe {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.pr-safe {
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Glassmorphism utility classes */
@@ -54,4 +77,16 @@ body {
 /* Animation utilities to eliminate layout shifts */
 .smooth-transition {
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Prevent image overflow & text truncation rules */
+img, svg, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Mobile responsive touch target sizing helper */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
 }

@@ -43,7 +43,7 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -59,23 +59,27 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`relative w-full ${maxWidths[maxWidth]} bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden z-10`}
+            className={`relative w-full ${maxWidths[maxWidth]} max-h-[90vh] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden z-10`}
           >
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800">
-                <h3 className="text-lg font-bold text-slate-100">{title}</h3>
+              <div className="flex items-center justify-between px-5 py-3.5 sm:px-6 sm:py-4 border-b border-slate-800 shrink-0">
+                <h3 className="text-base sm:text-lg font-bold text-slate-100 truncate pr-2">
+                  {title}
+                </h3>
                 <button
                   onClick={onClose}
-                  className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0 touch-target flex items-center justify-center"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-5 h-5 shrink-0" />
                 </button>
               </div>
             )}
 
-            {/* Content */}
-            <div className="p-6">{children}</div>
+            {/* Scrollable Content */}
+            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-4rem)]">
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

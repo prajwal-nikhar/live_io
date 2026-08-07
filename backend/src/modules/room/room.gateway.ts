@@ -597,9 +597,15 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit("answer:acknowledged", responsePayload);
 
       const stats = await this.roomService.getQuestionStats(pin, questionId);
-      this.server.to(`host:${pin}`).emit("answer:progress", {
+      const players = await this.roomService.getPlayers(pin);
+      const progressPayload = {
         totalResponses: stats?.totalResponses || 0,
-      });
+        totalPlayers: players.length || 1,
+        options: stats?.options || [],
+        stats,
+      };
+      this.server.to(`host:${pin}`).emit("answer:progress", progressPayload);
+      this.server.to(`room:${pin}`).emit("answer:progress", progressPayload);
 
       return { success: true, data: responsePayload };
     } catch (error: any) {
