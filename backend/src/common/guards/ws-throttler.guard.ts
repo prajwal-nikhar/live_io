@@ -1,6 +1,11 @@
-import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common';
-import { Socket } from 'socket.io';
-import { CacheService } from '../../modules/cache/cache.service';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
+import { Socket } from "socket.io";
+import { CacheService } from "../../modules/cache/cache.service";
 
 @Injectable()
 export class WsThrottlerGuard implements CanActivate {
@@ -15,7 +20,7 @@ export class WsThrottlerGuard implements CanActivate {
   constructor(private cacheService: CacheService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    if (context.getType() !== 'ws') {
+    if (context.getType() !== "ws") {
       return true;
     }
 
@@ -24,8 +29,9 @@ export class WsThrottlerGuard implements CanActivate {
       return true;
     }
 
-    const eventName = context.switchToWs().getPattern() || 'unknown_event';
-    const isHostEvent = eventName.startsWith('host:') || eventName.startsWith('host_');
+    const eventName = context.switchToWs().getPattern() || "unknown_event";
+    const isHostEvent =
+      eventName.startsWith("host:") || eventName.startsWith("host_");
     const limit = isHostEvent ? this.hostLimit : this.playerLimit;
 
     const key = `rate_limit:ws:${client.id}:${eventName}`;
@@ -35,12 +41,20 @@ export class WsThrottlerGuard implements CanActivate {
       const current = currentRaw ? parseInt(currentRaw, 10) : 0;
 
       if (current >= limit) {
-        this.logger.warn(`[WS Rate Limit Exceeded] Client ${client.id} exceeded limit for event '${eventName}'`);
-        client.emit('error', { message: 'Too many requests. Please slow down.' });
+        this.logger.warn(
+          `[WS Rate Limit Exceeded] Client ${client.id} exceeded limit for event '${eventName}'`,
+        );
+        client.emit("error", {
+          message: "Too many requests. Please slow down.",
+        });
         return false;
       }
 
-      await this.cacheService.set(key, (current + 1).toString(), this.ttlSeconds);
+      await this.cacheService.set(
+        key,
+        (current + 1).toString(),
+        this.ttlSeconds,
+      );
       return true;
     } catch {
       // Fail open if cache error occurs

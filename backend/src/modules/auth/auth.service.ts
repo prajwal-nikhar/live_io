@@ -1,8 +1,15 @@
-import { Injectable, ConflictException, UnauthorizedException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../prisma/prisma.service';
-import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { PrismaService } from "../prisma/prisma.service";
+import * as bcrypt from "bcryptjs";
+import * as crypto from "crypto";
 
 @Injectable()
 export class AuthService {
@@ -13,14 +20,14 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(email: string, pass: string, name: string, role = 'HOST') {
+  async register(email: string, pass: string, name: string, role = "HOST") {
     const normalizedEmail = email.toLowerCase().trim();
 
     const existing = await this.prisma.user.findFirst({
       where: { email: normalizedEmail, deletedAt: null },
     });
     if (existing) {
-      throw new ConflictException('Email address is already registered');
+      throw new ConflictException("Email address is already registered");
     }
 
     const passwordHash = await bcrypt.hash(pass, 10);
@@ -46,16 +53,18 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException("Invalid email or password");
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException('User account has been deactivated. Contact an administrator.');
+      throw new UnauthorizedException(
+        "User account has been deactivated. Contact an administrator.",
+      );
     }
 
     const valid = await bcrypt.compare(pass, user.passwordHash);
     if (!valid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException("Invalid email or password");
     }
 
     // Update lastLogin timestamp
@@ -71,10 +80,13 @@ export class AuthService {
     let payload: any;
     try {
       payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'cognition-super-secret-jwt-key-2026',
+        secret:
+          process.env.JWT_REFRESH_SECRET ||
+          process.env.JWT_SECRET ||
+          "cognition-super-secret-jwt-key-2026",
       });
     } catch (e) {
-      throw new UnauthorizedException('Invalid or expired refresh token');
+      throw new UnauthorizedException("Invalid or expired refresh token");
     }
 
     const user = await this.prisma.user.findFirst({
@@ -82,12 +94,14 @@ export class AuthService {
     });
 
     if (!user || !user.refreshTokenHash) {
-      throw new UnauthorizedException('Access denied. Invalid session context.');
+      throw new UnauthorizedException(
+        "Access denied. Invalid session context.",
+      );
     }
 
     const isMatch = await bcrypt.compare(refreshToken, user.refreshTokenHash);
     if (!isMatch) {
-      throw new UnauthorizedException('Refresh token is invalid or revoked');
+      throw new UnauthorizedException("Refresh token is invalid or revoked");
     }
 
     return this.generateAndStoreTokens(user);
@@ -98,16 +112,16 @@ export class AuthService {
       where: { id: userId },
       data: { refreshTokenHash: null },
     });
-    return { success: true, message: 'Logged out successfully' };
+    return { success: true, message: "Logged out successfully" };
   }
 
   async changePassword(userId: string, currentPass: string, newPass: string) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new NotFoundException('User not found');
+    if (!user) throw new NotFoundException("User not found");
 
     const valid = await bcrypt.compare(currentPass, user.passwordHash);
     if (!valid) {
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new UnauthorizedException("Current password is incorrect");
     }
 
     const passwordHash = await bcrypt.hash(newPass, 10);
@@ -116,7 +130,7 @@ export class AuthService {
       data: { passwordHash, refreshTokenHash: null },
     });
 
-    return { success: true, message: 'Password updated successfully' };
+    return { success: true, message: "Password updated successfully" };
   }
 
   async forgotPassword(email: string) {
@@ -127,10 +141,13 @@ export class AuthService {
 
     if (!user) {
       // Return success to prevent user enumeration attacks
-      return { success: true, message: 'If an account exists, a reset link has been dispatched' };
+      return {
+        success: true,
+        message: "If an account exists, a reset link has been dispatched",
+      };
     }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenHash = await bcrypt.hash(resetToken, 10);
     const resetTokenExpires = new Date(Date.now() + 3600 * 1000); // 1 hour
 
@@ -142,11 +159,13 @@ export class AuthService {
       },
     });
 
-    this.logger.log(`Password reset token generated for ${normalizedEmail}: ${resetToken}`);
+    this.logger.log(
+      `Password reset token generated for ${normalizedEmail}: ${resetToken}`,
+    );
 
     return {
       success: true,
-      message: 'If an account exists, a reset link has been dispatched',
+      message: "If an account exists, a reset link has been dispatched",
       resetToken, // Returned for dev/testing convenience
     };
   }
@@ -161,14 +180,17 @@ export class AuthService {
 
     let targetUser: any = null;
     for (const user of users) {
-      if (user.resetTokenHash && (await bcrypt.compare(resetToken, user.resetTokenHash))) {
+      if (
+        user.resetTokenHash &&
+        (await bcrypt.compare(resetToken, user.resetTokenHash))
+      ) {
         targetUser = user;
         break;
       }
     }
 
     if (!targetUser) {
-      throw new BadRequestException('Invalid or expired password reset token');
+      throw new BadRequestException("Invalid or expired password reset token");
     }
 
     const passwordHash = await bcrypt.hash(newPass, 10);
@@ -182,7 +204,10 @@ export class AuthService {
       },
     });
 
-    return { success: true, message: 'Password reset successfully. You may now log in.' };
+    return {
+      success: true,
+      message: "Password reset successfully. You may now log in.",
+    };
   }
 
   private async generateAndStoreTokens(user: any) {
@@ -196,15 +221,16 @@ export class AuthService {
     const jwtSecret = process.env.JWT_SECRET;
     const refreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret;
 
-    if (!jwtSecret && process.env.NODE_ENV === 'production') {
-      throw new Error('CRITICAL: JWT_SECRET environment variable is missing');
+    if (!jwtSecret && process.env.NODE_ENV === "production") {
+      throw new Error("CRITICAL: JWT_SECRET environment variable is missing");
     }
 
-    const effectiveJwtSecret = jwtSecret || 'dev-fallback-secret-key-change-in-prod';
+    const effectiveJwtSecret =
+      jwtSecret || "dev-fallback-secret-key-change-in-prod";
     const effectiveRefreshSecret = refreshSecret || effectiveJwtSecret;
 
-    const accessTokenExpiresIn = process.env.JWT_EXPIRATION || '15m';
-    const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRATION || '7d';
+    const accessTokenExpiresIn = process.env.JWT_EXPIRATION || "15m";
+    const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRATION || "7d";
 
     const accessToken = this.jwtService.sign(payload, {
       secret: effectiveJwtSecret,

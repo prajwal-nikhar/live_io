@@ -1,15 +1,26 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import Redis from 'ioredis';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from "@nestjs/common";
+import Redis from "ioredis";
 
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CacheService.name);
   private redisClient: Redis | null = null;
-  private inMemoryCache = new Map<string, { value: string; expiresAt: number | null }>();
+  private inMemoryCache = new Map<
+    string,
+    { value: string; expiresAt: number | null }
+  >();
   private useInMemory = true;
 
   onModuleInit() {
-    const redisUrl = process.env.REDIS_URL || process.env.REDIS_PRIVATE_URL || process.env.REDIS_PUBLIC_URL;
+    const redisUrl =
+      process.env.REDIS_URL ||
+      process.env.REDIS_PRIVATE_URL ||
+      process.env.REDIS_PUBLIC_URL;
     if (redisUrl) {
       try {
         this.logger.log(`Attempting to connect to Redis at ${redisUrl}...`);
@@ -18,21 +29,26 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
           connectTimeout: 2000,
         });
 
-        this.redisClient.on('connect', () => {
-          this.logger.log('Successfully connected to Redis.');
+        this.redisClient.on("connect", () => {
+          this.logger.log("Successfully connected to Redis.");
           this.useInMemory = false;
         });
 
-        this.redisClient.on('error', (err) => {
-          this.logger.warn(`Redis connection error: ${err.message}. Falling back to in-memory cache.`);
+        this.redisClient.on("error", (err) => {
+          this.logger.warn(
+            `Redis connection error: ${err.message}. Falling back to in-memory cache.`,
+          );
           this.useInMemory = true;
         });
       } catch (error) {
-        this.logger.error('Failed to initialize Redis client. Using in-memory fallback.', error);
+        this.logger.error(
+          "Failed to initialize Redis client. Using in-memory fallback.",
+          error,
+        );
         this.useInMemory = true;
       }
     } else {
-      this.logger.log('No REDIS_URL provided. Operating in-memory mode.');
+      this.logger.log("No REDIS_URL provided. Operating in-memory mode.");
       this.useInMemory = true;
     }
   }
@@ -42,7 +58,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       try {
         return await this.redisClient.get(key);
       } catch (error) {
-        this.logger.warn(`Redis GET failed for key: ${key}. Falling back to in-memory.`);
+        this.logger.warn(
+          `Redis GET failed for key: ${key}. Falling back to in-memory.`,
+        );
       }
     }
 
@@ -61,13 +79,15 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     if (!this.useInMemory && this.redisClient) {
       try {
         if (ttlSeconds) {
-          await this.redisClient.set(key, value, 'EX', ttlSeconds);
+          await this.redisClient.set(key, value, "EX", ttlSeconds);
         } else {
           await this.redisClient.set(key, value);
         }
         return;
       } catch (error) {
-        this.logger.warn(`Redis SET failed for key: ${key}. Falling back to in-memory.`);
+        this.logger.warn(
+          `Redis SET failed for key: ${key}. Falling back to in-memory.`,
+        );
       }
     }
 
@@ -81,7 +101,9 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         await this.redisClient.del(key);
         return;
       } catch (error) {
-        this.logger.warn(`Redis DEL failed for key: ${key}. Falling back to in-memory.`);
+        this.logger.warn(
+          `Redis DEL failed for key: ${key}. Falling back to in-memory.`,
+        );
       }
     }
 
@@ -93,12 +115,14 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       try {
         return await this.redisClient.keys(pattern);
       } catch (error) {
-        this.logger.warn(`Redis KEYS failed for pattern: ${pattern}. Falling back to in-memory.`);
+        this.logger.warn(
+          `Redis KEYS failed for pattern: ${pattern}. Falling back to in-memory.`,
+        );
       }
     }
 
     // Basic regex conversion for Redis patterns (e.g., "room:*" -> "^room:.*$")
-    const regexStr = '^' + pattern.replace(/\*/g, '.*') + '$';
+    const regexStr = "^" + pattern.replace(/\*/g, ".*") + "$";
     const regex = new RegExp(regexStr);
     const result: string[] = [];
 
@@ -122,7 +146,7 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         await this.redisClient.flushall();
         return;
       } catch (error) {
-        this.logger.warn('Redis FLUSHALL failed. Falling back to in-memory.');
+        this.logger.warn("Redis FLUSHALL failed. Falling back to in-memory.");
       }
     }
 

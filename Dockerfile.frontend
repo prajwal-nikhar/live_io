@@ -1,0 +1,38 @@
+# Multi-Stage Production Dockerfile for Next.js Frontend
+# Stage 1: Build Dependencies & Next.js Bundle
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY frontend/package*.json ./frontend/
+WORKDIR /app/frontend
+RUN npm ci --legacy-peer-deps
+
+COPY frontend/ ./
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+RUN npm run build
+
+# Stage 2: Production Container
+FROM node:20-alpine AS runner
+
+WORKDIR /app/frontend
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Security: Run as non-root node user
+USER node
+
+COPY --chown=node:node --from=builder /app/frontend/public ./public
+COPY --chown=node:node --from=builder /app/frontend/.next ./.next
+COPY --chown=node:node --from=builder /app/frontend/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/frontend/package*.json ./
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000 || exit 1
+
+CMD ["npm", "start"]

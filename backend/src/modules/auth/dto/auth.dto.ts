@@ -1,13 +1,19 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from "class-validator";
 
 export class RegisterDto {
-  @IsEmail({}, { message: 'Invalid email address' })
+  @IsEmail({}, { message: "Invalid email address" })
   @IsNotEmpty()
   email: string;
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  @MinLength(6, { message: "Password must be at least 6 characters long" })
   password: string;
 
   @IsString()
@@ -20,7 +26,7 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @IsEmail({}, { message: 'Invalid email address' })
+  @IsEmail({}, { message: "Invalid email address" })
   @IsNotEmpty()
   email: string;
 
@@ -42,12 +48,12 @@ export class ChangePasswordDto {
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(6, { message: 'New password must be at least 6 characters long' })
+  @MinLength(6, { message: "New password must be at least 6 characters long" })
   newPassword: string;
 }
 
 export class ForgotPasswordDto {
-  @IsEmail({}, { message: 'Invalid email address' })
+  @IsEmail({}, { message: "Invalid email address" })
   @IsNotEmpty()
   email: string;
 }
@@ -59,6 +65,6 @@ export class ResetPasswordDto {
 
   @IsString()
   @IsNotEmpty()
-  @MinLength(6, { message: 'Password must be at least 6 characters long' })
+  @MinLength(6, { message: "Password must be at least 6 characters long" })
   newPassword: string;
 }

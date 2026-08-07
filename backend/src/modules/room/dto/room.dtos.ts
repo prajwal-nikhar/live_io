@@ -1,15 +1,21 @@
-import { IsString, IsNotEmpty, IsOptional, Length, Matches } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  Length,
+  Matches,
+} from "class-validator";
 
 export class JoinRoomDto {
   @IsString()
   @IsNotEmpty()
-  @Length(6, 6, { message: 'PIN must be exactly 6 characters' })
-  @Matches(/^\d{6}$/, { message: 'PIN must consist of 6 numeric digits' })
+  @Length(6, 6, { message: "PIN must be exactly 6 characters" })
+  @Matches(/^\d{6}$/, { message: "PIN must consist of 6 numeric digits" })
   pin: string;
 
   @IsString()
   @IsNotEmpty()
-  @Length(1, 40, { message: 'Name must be between 1 and 40 characters' })
+  @Length(1, 40, { message: "Name must be between 1 and 40 characters" })
   name: string;
 }
 

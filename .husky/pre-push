@@ -1,0 +1,6 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "🧪 Running pre-push type check & unit tests..."
+npm run type-check
+npm run test

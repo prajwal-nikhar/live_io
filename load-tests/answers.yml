@@ -9,11 +9,9 @@ config:
     socketio: {}
 
 scenarios:
-
   - engine: socketio
 
     flow:
-
       - connect: {}
 
       - emit:

@@ -1,25 +1,45 @@
-const { io } = require('socket.io-client');
-const fs = require('fs');
-const path = require('path');
-const http = require('http');
+const { io } = require("socket.io-client");
+const fs = require("fs");
+const path = require("path");
+const http = require("http");
 
-const SERVER_URL = process.env.SERVER_URL || 'http://localhost:4000';
-const PIN = process.env.PIN || '999999';
+const SERVER_URL = process.env.SERVER_URL || "http://localhost:4000";
+const PIN = process.env.PIN || "999999";
 
 const STAGES = [
-  { name: '100 Concurrent Players Lifecycle', count: 100, disconnectPercent: 10 },
-  { name: '300 Concurrent Players Lifecycle', count: 300, disconnectPercent: 15 },
-  { name: '600 Concurrent Players Lifecycle', count: 600, disconnectPercent: 20 },
-  { name: '1,000 Concurrent Players Lifecycle', count: 1000, disconnectPercent: 25 },
+  {
+    name: "100 Concurrent Players Lifecycle",
+    count: 100,
+    disconnectPercent: 10,
+  },
+  {
+    name: "300 Concurrent Players Lifecycle",
+    count: 300,
+    disconnectPercent: 15,
+  },
+  {
+    name: "600 Concurrent Players Lifecycle",
+    count: 600,
+    disconnectPercent: 20,
+  },
+  {
+    name: "1,000 Concurrent Players Lifecycle",
+    count: 1000,
+    disconnectPercent: 25,
+  },
 ];
 
 function httpGet(url) {
   return new Promise((resolve, reject) => {
-    http.get(url, (res) => {
-      let data = '';
-      res.on('data', (chunk) => (data += chunk));
-      res.on('end', () => resolve({ statusCode: res.statusCode, body: data }));
-    }).on('error', reject);
+    http
+      .get(url, (res) => {
+        let data = "";
+        res.on("data", (chunk) => (data += chunk));
+        res.on("end", () =>
+          resolve({ statusCode: res.statusCode, body: data }),
+        );
+      })
+      .on("error", reject);
   });
 }
 
@@ -31,15 +51,18 @@ function httpPost(url, body = {}) {
       hostname: urlObj.hostname,
       port: urlObj.port,
       path: urlObj.pathname,
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': data.length },
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": data.length,
+      },
     };
     const req = http.request(options, (res) => {
-      let body = '';
-      res.on('data', (chunk) => (body += chunk));
-      res.on('end', () => resolve({ statusCode: res.statusCode, body }));
+      let body = "";
+      res.on("data", (chunk) => (body += chunk));
+      res.on("end", () => resolve({ statusCode: res.statusCode, body }));
     });
-    req.on('error', reject);
+    req.on("error", reject);
     req.write(data);
     req.end();
   });
@@ -53,9 +76,13 @@ async function resetRoomState(pin) {
   try {
     const res = await httpPost(`${SERVER_URL}/room/reset-load-test/${pin}`);
     if (res.statusCode === 200 || res.statusCode === 201) {
-      console.log(`  • Room PIN ${pin} reset to LOBBY successfully (cache + DB cleared)`);
+      console.log(
+        `  • Room PIN ${pin} reset to LOBBY successfully (cache + DB cleared)`,
+      );
     } else {
-      console.warn(`  ⚠️ Room reset returned status ${res.statusCode}: ${res.body}`);
+      console.warn(
+        `  ⚠️ Room reset returned status ${res.statusCode}: ${res.body}`,
+      );
     }
   } catch (err) {
     console.warn(`  ⚠️ Room reset failed: ${err.message}`);
@@ -66,9 +93,13 @@ async function runFullLifecycleStage(stage) {
   await resetRoomState(PIN);
   await new Promise((r) => setTimeout(r, 1000));
 
-  console.log(`\n==================================================================`);
+  console.log(
+    `\n==================================================================`,
+  );
   console.log(`🚀 STAGE: ${stage.name} (${stage.count} concurrent users)`);
-  console.log(`==================================================================`);
+  console.log(
+    `==================================================================`,
+  );
 
   const startTime = Date.now();
   let connected = 0;
@@ -81,11 +112,17 @@ async function runFullLifecycleStage(stage) {
   let quizFinishedCount = 0;
 
   // 1. Connect Host Socket
-  const hostSocket = io(SERVER_URL, { transports: ['websocket'], reconnection: false, timeout: 15000 });
+  const hostSocket = io(SERVER_URL, {
+    transports: ["websocket"],
+    reconnection: false,
+    timeout: 15000,
+  });
   await new Promise((resolve, reject) => {
-    hostSocket.on('connect', resolve);
-    hostSocket.on('connect_error', (err) => reject(new Error(`Host connect failed: ${err.message}`)));
-    setTimeout(() => reject(new Error('Host connect timed out')), 10000);
+    hostSocket.on("connect", resolve);
+    hostSocket.on("connect_error", (err) =>
+      reject(new Error(`Host connect failed: ${err.message}`)),
+    );
+    setTimeout(() => reject(new Error("Host connect timed out")), 10000);
   });
   console.log(`  • Host Socket Connected: ${hostSocket.id}`);
 
@@ -94,12 +131,16 @@ async function runFullLifecycleStage(stage) {
   const playerSocketsMap = new Map();
 
   for (let i = 1; i <= stage.count; i++) {
-    const socket = io(SERVER_URL, { transports: ['websocket'], reconnection: false, timeout: 15000 });
+    const socket = io(SERVER_URL, {
+      transports: ["websocket"],
+      reconnection: false,
+      timeout: 15000,
+    });
     const playerName = `VU_${stage.count}_${i}`;
 
-    socket.on('connect', () => {
+    socket.on("connect", () => {
       connected++;
-      socket.emit('player:join', { pin: PIN, name: playerName }, (ack) => {
+      socket.emit("player:join", { pin: PIN, name: playerName }, (ack) => {
         if (ack && ack.success && ack.data?.player) {
           joined++;
           const pData = ack.data.player;
@@ -110,17 +151,19 @@ async function runFullLifecycleStage(stage) {
         } else {
           joinFailed++;
           if (joinFailed <= 5) {
-            console.error(`  ⚠️ Join Failed for ${playerName}: ${JSON.stringify(ack)}`);
+            console.error(
+              `  ⚠️ Join Failed for ${playerName}: ${JSON.stringify(ack)}`,
+            );
           }
         }
       });
     });
 
-    socket.on('question:start', () => {
+    socket.on("question:start", () => {
       questionsReceived++;
     });
 
-    socket.on('quiz:finished', () => {
+    socket.on("quiz:finished", () => {
       quizFinishedCount++;
     });
 
@@ -139,30 +182,65 @@ async function runFullLifecycleStage(stage) {
   if (joinFailed > 0) console.log(`  • Room Joins Failed:   ${joinFailed}`);
 
   if (joined < stage.count * 0.95) {
-    console.error(`  ❌ Room join failure detected during ${stage.name} (${joined}/${stage.count})`);
+    console.error(
+      `  ❌ Room join failure detected during ${stage.name} (${joined}/${stage.count})`,
+    );
     players.forEach((p) => p.socket?.disconnect());
     hostSocket.disconnect();
-    return { success: false, stage: stage.name, joined, count: stage.count, connected, answersSubmitted: 0, reconnectedCount: 0, disconnectCount: 0, quizFinishedCount: 0, duplicateBlocked: false, timeSec: 0 };
+    return {
+      success: false,
+      stage: stage.name,
+      joined,
+      count: stage.count,
+      connected,
+      answersSubmitted: 0,
+      reconnectedCount: 0,
+      disconnectCount: 0,
+      quizFinishedCount: 0,
+      duplicateBlocked: false,
+      timeSec: 0,
+    };
   }
 
   // 3. Host Starts Quiz
   console.log(`  • Host emitting 'host:start'...`);
-  let startAck = await new Promise((r) => hostSocket.emit('host:start', { pin: PIN, hostId: 'host_id_default' }, r));
-  console.log(`  • Host Start Ack:`, startAck?.success ? 'SUCCESS' : `FAILED (${startAck?.message})`);
+  let startAck = await new Promise((r) =>
+    hostSocket.emit("host:start", { pin: PIN, hostId: "host_id_default" }, r),
+  );
+  console.log(
+    `  • Host Start Ack:`,
+    startAck?.success ? "SUCCESS" : `FAILED (${startAck?.message})`,
+  );
 
   if (!startAck?.success) {
     console.error(`  ❌ Host start failed: ${startAck?.message}`);
     players.forEach((p) => p.socket?.disconnect());
     hostSocket.disconnect();
-    return { success: false, stage: stage.name, joined, count: stage.count, connected, answersSubmitted: 0, reconnectedCount: 0, disconnectCount: 0, quizFinishedCount: 0, duplicateBlocked: false, timeSec: 0 };
+    return {
+      success: false,
+      stage: stage.name,
+      joined,
+      count: stage.count,
+      connected,
+      answersSubmitted: 0,
+      reconnectedCount: 0,
+      disconnectCount: 0,
+      quizFinishedCount: 0,
+      duplicateBlocked: false,
+      timeSec: 0,
+    };
   }
 
   // Wait for question broadcasts to propagate
   await new Promise((r) => setTimeout(r, 1500));
-  console.log(`  • Question Broadcasts Received by Players: ${questionsReceived} / ${joined}`);
+  console.log(
+    `  • Question Broadcasts Received by Players: ${questionsReceived} / ${joined}`,
+  );
 
   // 4. Simultaneous Answer Submissions
-  console.log(`  • Submitting answers simultaneously across all ${players.length} players...`);
+  console.log(
+    `  • Submitting answers simultaneously across all ${players.length} players...`,
+  );
   const activeQuestionId = startAck?.data?.question?.id;
   const sampleOptionId = startAck?.data?.question?.options?.[0]?.id;
 
@@ -170,7 +248,19 @@ async function runFullLifecycleStage(stage) {
     console.error(`  ❌ No question/option IDs in start ack`);
     players.forEach((p) => p.socket?.disconnect());
     hostSocket.disconnect();
-    return { success: false, stage: stage.name, joined, count: stage.count, connected, answersSubmitted: 0, reconnectedCount: 0, disconnectCount: 0, quizFinishedCount: 0, duplicateBlocked: false, timeSec: 0 };
+    return {
+      success: false,
+      stage: stage.name,
+      joined,
+      count: stage.count,
+      connected,
+      answersSubmitted: 0,
+      reconnectedCount: 0,
+      disconnectCount: 0,
+      quizFinishedCount: 0,
+      duplicateBlocked: false,
+      timeSec: 0,
+    };
   }
 
   await Promise.all(
@@ -178,18 +268,25 @@ async function runFullLifecycleStage(stage) {
       return new Promise((resolve) => {
         const timer = setTimeout(() => resolve(false), 8000);
         p.socket.emit(
-          'player:answer',
-          { pin: PIN, playerId: p.id, questionId: activeQuestionId, optionId: sampleOptionId },
+          "player:answer",
+          {
+            pin: PIN,
+            playerId: p.id,
+            questionId: activeQuestionId,
+            optionId: sampleOptionId,
+          },
           (ack) => {
             clearTimeout(timer);
             if (ack && ack.success) answersSubmitted++;
             resolve(true);
-          }
+          },
         );
       });
-    })
+    }),
   );
-  console.log(`  • Simultaneous Answers Submitted Successfully: ${answersSubmitted} / ${joined}`);
+  console.log(
+    `  • Simultaneous Answers Submitted Successfully: ${answersSubmitted} / ${joined}`,
+  );
 
   // 5. Test Duplicate Answer Rejection
   console.log(`  • Testing duplicate answer submission protection...`);
@@ -197,14 +294,21 @@ async function runFullLifecycleStage(stage) {
   if (firstPlayer) {
     const dupAck = await new Promise((r) =>
       firstPlayer.socket.emit(
-        'player:answer',
-        { pin: PIN, playerId: firstPlayer.id, questionId: activeQuestionId, optionId: sampleOptionId },
-        r
-      )
+        "player:answer",
+        {
+          pin: PIN,
+          playerId: firstPlayer.id,
+          questionId: activeQuestionId,
+          optionId: sampleOptionId,
+        },
+        r,
+      ),
     );
     if (dupAck && dupAck.data?.duplicate) {
       answerDuplicatesBlocked++;
-      console.log(`  • Duplicate Submission Blocked Correctly (duplicate: true)`);
+      console.log(
+        `  • Duplicate Submission Blocked Correctly (duplicate: true)`,
+      );
     } else {
       console.log(`  • Duplicate Submission Result: ${JSON.stringify(dupAck)}`);
     }
@@ -212,30 +316,54 @@ async function runFullLifecycleStage(stage) {
 
   // 6. Host Skip Question
   console.log(`  • Host emitting 'host:skip'...`);
-  await new Promise((r) => hostSocket.emit('host:skip', { pin: PIN, hostId: 'host_id_default' }, r));
+  await new Promise((r) =>
+    hostSocket.emit("host:skip", { pin: PIN, hostId: "host_id_default" }, r),
+  );
 
   // 7. Host Show Answer & Leaderboard
   console.log(`  • Host emitting 'host:showAnswer'...`);
-  await new Promise((r) => hostSocket.emit('host:showAnswer', { pin: PIN, hostId: 'host_id_default' }, r));
+  await new Promise((r) =>
+    hostSocket.emit(
+      "host:showAnswer",
+      { pin: PIN, hostId: "host_id_default" },
+      r,
+    ),
+  );
 
   console.log(`  • Host emitting 'host:showLeaderboard'...`);
-  await new Promise((r) => hostSocket.emit('host:showLeaderboard', { pin: PIN, hostId: 'host_id_default' }, r));
+  await new Promise((r) =>
+    hostSocket.emit(
+      "host:showLeaderboard",
+      { pin: PIN, hostId: "host_id_default" },
+      r,
+    ),
+  );
 
   // 8. Random Disconnect & Reconnect Failure Recovery Test
-  const disconnectCount = Math.floor(players.length * (stage.disconnectPercent / 100));
-  console.log(`  • Simulating random disconnection of ${disconnectCount} players (${stage.disconnectPercent}%)...`);
+  const disconnectCount = Math.floor(
+    players.length * (stage.disconnectPercent / 100),
+  );
+  console.log(
+    `  • Simulating random disconnection of ${disconnectCount} players (${stage.disconnectPercent}%)...`,
+  );
 
   const victims = players.slice(0, disconnectCount);
   victims.forEach((p) => p.socket.disconnect());
   await new Promise((r) => setTimeout(r, 2000));
 
-  console.log(`  • Reconnecting ${disconnectCount} disconnected players via 'player:reconnect'...`);
+  console.log(
+    `  • Reconnecting ${disconnectCount} disconnected players via 'player:reconnect'...`,
+  );
 
   // Stagger reconnects in batches of 20 to avoid pool exhaustion
   const RECONNECT_BATCH_SIZE = 20;
   const RECONNECT_TIMEOUT = 10000; // 10s timeout per reconnection
-  
-  for (let batchStart = 0; batchStart < victims.length; batchStart += RECONNECT_BATCH_SIZE) {
+
+  for (
+    let batchStart = 0;
+    batchStart < victims.length;
+    batchStart += RECONNECT_BATCH_SIZE
+  ) {
     const batch = victims.slice(batchStart, batchStart + RECONNECT_BATCH_SIZE);
     await Promise.all(
       batch.map((p) => {
@@ -244,15 +372,21 @@ async function runFullLifecycleStage(stage) {
           const timer = setTimeout(() => {
             if (!done) {
               done = true;
-              console.error(`  ⚠️ Reconnect Timeout for ${p.playerName || p.name}`);
+              console.error(
+                `  ⚠️ Reconnect Timeout for ${p.playerName || p.name}`,
+              );
               resolve(false);
             }
           }, RECONNECT_TIMEOUT);
 
-          const newSocket = io(SERVER_URL, { transports: ['websocket'], reconnection: false, timeout: RECONNECT_TIMEOUT });
-          newSocket.on('connect', () => {
+          const newSocket = io(SERVER_URL, {
+            transports: ["websocket"],
+            reconnection: false,
+            timeout: RECONNECT_TIMEOUT,
+          });
+          newSocket.on("connect", () => {
             newSocket.emit(
-              'player:reconnect',
+              "player:reconnect",
               { pin: PIN, playerId: p.id, reconnectToken: p.reconnectToken },
               (ack) => {
                 if (!done) {
@@ -262,25 +396,29 @@ async function runFullLifecycleStage(stage) {
                     reconnectedCount++;
                     p.socket = newSocket;
                   } else {
-                    console.error(`  ⚠️ Reconnect Failed for ${p.playerName || p.name}: ${JSON.stringify(ack)}`);
+                    console.error(
+                      `  ⚠️ Reconnect Failed for ${p.playerName || p.name}: ${JSON.stringify(ack)}`,
+                    );
                     newSocket.disconnect();
                   }
                   resolve(true);
                 }
-              }
+              },
             );
           });
 
-          newSocket.on('connect_error', (err) => {
+          newSocket.on("connect_error", (err) => {
             if (!done) {
               done = true;
               clearTimeout(timer);
-              console.error(`  ⚠️ Reconnect Socket Error for ${p.playerName || p.name}: ${err.message}`);
+              console.error(
+                `  ⚠️ Reconnect Socket Error for ${p.playerName || p.name}: ${err.message}`,
+              );
               resolve(false);
             }
           });
         });
-      })
+      }),
     );
     // Small delay between batches
     if (batchStart + RECONNECT_BATCH_SIZE < victims.length) {
@@ -288,17 +426,26 @@ async function runFullLifecycleStage(stage) {
     }
   }
 
-  console.log(`  • Reconnections Succeeded: ${reconnectedCount} / ${disconnectCount}`);
+  console.log(
+    `  • Reconnections Succeeded: ${reconnectedCount} / ${disconnectCount}`,
+  );
 
   // 9. Host Finish Quiz (advance to next question which should finish the quiz since there's only 1 question)
   console.log(`  • Host advancing and completing quiz...`);
-  const nextAck = await new Promise((r) => hostSocket.emit('host:next', { pin: PIN, hostId: 'host_id_default' }, r));
-  console.log(`  • Host Next Ack:`, nextAck?.success ? 'SUCCESS' : `FAILED (${nextAck?.message})`);
+  const nextAck = await new Promise((r) =>
+    hostSocket.emit("host:next", { pin: PIN, hostId: "host_id_default" }, r),
+  );
+  console.log(
+    `  • Host Next Ack:`,
+    nextAck?.success ? "SUCCESS" : `FAILED (${nextAck?.message})`,
+  );
   if (nextAck?.data?.finished) {
     console.log(`  • Quiz marked as finished by host:next`);
   }
   await new Promise((r) => setTimeout(r, 2000));
-  console.log(`  • Quiz Finish Broadcasts Received by Players: ${quizFinishedCount} / ${joined}`);
+  console.log(
+    `  • Quiz Finish Broadcasts Received by Players: ${quizFinishedCount} / ${joined}`,
+  );
 
   // Cleanup stage sockets
   players.forEach((p) => p.socket?.disconnect());
@@ -306,10 +453,15 @@ async function runFullLifecycleStage(stage) {
 
   const totalStageTimeSec = ((Date.now() - startTime) / 1000).toFixed(1);
   const minRequiredReconnects = Math.floor(disconnectCount * 0.8);
-  const success = joined >= stage.count * 0.95 && answersSubmitted >= joined * 0.95 && reconnectedCount >= minRequiredReconnects;
+  const success =
+    joined >= stage.count * 0.95 &&
+    answersSubmitted >= joined * 0.95 &&
+    reconnectedCount >= minRequiredReconnects;
 
   console.log(`\n  📋 Stage Summary:`);
-  console.log(`     Joined: ${joined}/${stage.count} | Answers: ${answersSubmitted}/${joined} | Reconnects: ${reconnectedCount}/${disconnectCount} | Time: ${totalStageTimeSec}s | ${success ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(
+    `     Joined: ${joined}/${stage.count} | Answers: ${answersSubmitted}/${joined} | Reconnects: ${reconnectedCount}/${disconnectCount} | Time: ${totalStageTimeSec}s | ${success ? "✅ PASS" : "❌ FAIL"}`,
+  );
 
   return {
     stage: stage.name,
@@ -327,11 +479,17 @@ async function runFullLifecycleStage(stage) {
 }
 
 async function main() {
-  console.log(`==================================================================`);
-  console.log(`🎯 ENTERPRISE PRODUCTION VALIDATION: 100 → 1,000 CONCURRENT USERS`);
+  console.log(
+    `==================================================================`,
+  );
+  console.log(
+    `🎯 ENTERPRISE PRODUCTION VALIDATION: 100 → 1,000 CONCURRENT USERS`,
+  );
   console.log(`🔊 Target URL: ${SERVER_URL}`);
   console.log(`🔑 Room PIN:   ${PIN}`);
-  console.log(`==================================================================`);
+  console.log(
+    `==================================================================`,
+  );
 
   const results = [];
   let overallPassed = true;
@@ -348,9 +506,13 @@ async function main() {
   }
 
   // 10. Verify Analytics & CSV Export Endpoints
-  console.log(`\n==================================================================`);
+  console.log(
+    `\n==================================================================`,
+  );
   console.log(`📊 VERIFYING ANALYTICS & CSV REPORT EXPORT ENDPOINTS`);
-  console.log(`==================================================================`);
+  console.log(
+    `==================================================================`,
+  );
 
   let summaryOk = false;
   let csvOk = false;
@@ -358,29 +520,42 @@ async function main() {
   try {
     const summaryRes = await httpGet(`${SERVER_URL}/analytics/summary`);
     summaryOk = summaryRes.statusCode === 200 || summaryRes.statusCode === 401;
-    console.log(`  • Analytics Summary Endpoint (/analytics/summary): Status ${summaryRes.statusCode} (${summaryOk ? 'OK' : 'FAILED'})`);
+    console.log(
+      `  • Analytics Summary Endpoint (/analytics/summary): Status ${summaryRes.statusCode} (${summaryOk ? "OK" : "FAILED"})`,
+    );
 
     const csvRes = await httpGet(`${SERVER_URL}/analytics/session/${PIN}/csv`);
     csvOk = csvRes.statusCode === 200 || csvRes.statusCode === 404;
-    console.log(`  • CSV Session Export Endpoint (/analytics/session/${PIN}/csv): Status ${csvRes.statusCode} (${csvOk ? 'OK' : 'FAILED'})`);
+    console.log(
+      `  • CSV Session Export Endpoint (/analytics/session/${PIN}/csv): Status ${csvRes.statusCode} (${csvOk ? "OK" : "FAILED"})`,
+    );
   } catch (err) {
     console.warn(`  ⚠️ Analytics HTTP check warning: ${err.message}`);
   }
 
   const totalCreated = results.reduce((acc, r) => acc + r.count, 0);
   const totalJoined = results.reduce((acc, r) => acc + r.joined, 0);
-  const totalAnswers = results.reduce((acc, r) => acc + (r.answersSubmitted || 0), 0);
-  const totalReconnects = results.reduce((acc, r) => acc + (r.reconnectedCount || 0), 0);
-  const totalDisconnects = results.reduce((acc, r) => acc + (r.disconnectCount || 0), 0);
+  const totalAnswers = results.reduce(
+    (acc, r) => acc + (r.answersSubmitted || 0),
+    0,
+  );
+  const totalReconnects = results.reduce(
+    (acc, r) => acc + (r.reconnectedCount || 0),
+    0,
+  );
+  const totalDisconnects = results.reduce(
+    (acc, r) => acc + (r.disconnectCount || 0),
+    0,
+  );
 
   const resultJson = {
     aggregate: {
       counters: {
-        'vusers.created': totalCreated,
-        'vusers.created_by_name.Full Quiz Lifecycle': totalCreated,
-        'vusers.completed': totalJoined,
-        'vusers.answers_submitted': totalAnswers,
-        'vusers.failed': 0,
+        "vusers.created": totalCreated,
+        "vusers.created_by_name.Full Quiz Lifecycle": totalCreated,
+        "vusers.completed": totalJoined,
+        "vusers.answers_submitted": totalAnswers,
+        "vusers.failed": 0,
       },
       rates: {
         connection_success_rate: `${((totalJoined / totalCreated) * 100).toFixed(1)}%`,
@@ -393,22 +568,36 @@ async function main() {
     },
   };
 
-  const resultPath = path.join(__dirname, 'result.json');
+  const resultPath = path.join(__dirname, "result.json");
   fs.writeFileSync(resultPath, JSON.stringify(resultJson, null, 2));
 
-  console.log(`\n==================================================================`);
+  console.log(
+    `\n==================================================================`,
+  );
   console.log(`🏆 FINAL PRODUCTION READINESS VALIDATION REPORT 🏆`);
-  console.log(`==================================================================`);
+  console.log(
+    `==================================================================`,
+  );
   console.log(`• Total Virtual Users Tested:       ${totalCreated}`);
-  console.log(`• Room Joins Success Rate:          ${((totalJoined / totalCreated) * 100).toFixed(1)}%`);
-  console.log(`• Simultaneous Answer Submissions:  ${totalAnswers} / ${totalJoined}`);
-  console.log(`• Disconnect & Reconnect Recovery:  ${totalReconnects} / ${totalDisconnects}`);
+  console.log(
+    `• Room Joins Success Rate:          ${((totalJoined / totalCreated) * 100).toFixed(1)}%`,
+  );
+  console.log(
+    `• Simultaneous Answer Submissions:  ${totalAnswers} / ${totalJoined}`,
+  );
+  console.log(
+    `• Disconnect & Reconnect Recovery:  ${totalReconnects} / ${totalDisconnects}`,
+  );
   console.log(`• Analytics & CSV Export Endpoints: VERIFIED`);
   console.log(`• Result JSON Written To:          ${resultPath}`);
-  console.log(`==================================================================`);
+  console.log(
+    `==================================================================`,
+  );
 
   if (overallPassed) {
-    console.log(`\n🎉 ALL PRODUCTION ACCEPTANCE CRITERIA PASSED SUCCESSFULLY! 🎉\n`);
+    console.log(
+      `\n🎉 ALL PRODUCTION ACCEPTANCE CRITERIA PASSED SUCCESSFULLY! 🎉\n`,
+    );
   }
 
   process.exit(overallPassed ? 0 : 1);

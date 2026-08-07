@@ -28,25 +28,42 @@
     {
       "title": "Memory RSS (Bytes)",
       "type": "stat",
-      "targets": [{ "expr": "nodejs_process_resident_memory_bytes", "refId": "A" }],
+      "targets": [
+        { "expr": "nodejs_process_resident_memory_bytes", "refId": "A" }
+      ],
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 }
     },
     {
       "title": "Join Latency (p95)",
       "type": "timeseries",
-      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(join_latency_seconds_bucket[1m])) by (le))", "refId": "A" }],
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(join_latency_seconds_bucket[1m])) by (le))",
+          "refId": "A"
+        }
+      ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
     },
     {
       "title": "Database Query Latency (p95)",
       "type": "timeseries",
-      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(db_latency_seconds_bucket[1m])) by (le))", "refId": "A" }],
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(db_latency_seconds_bucket[1m])) by (le))",
+          "refId": "A"
+        }
+      ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
     },
     {
       "title": "CPU Usage",
       "type": "timeseries",
-      "targets": [{ "expr": "rate(nodejs_process_cpu_seconds_total[1m]) * 100", "refId": "A" }],
+      "targets": [
+        {
+          "expr": "rate(nodejs_process_cpu_seconds_total[1m]) * 100",
+          "refId": "A"
+        }
+      ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 }
     },
     {

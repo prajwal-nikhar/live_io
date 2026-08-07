@@ -1,10 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
   let user = await prisma.user.findFirst();
   if (!user) {
-    console.error('No user found in database');
+    console.error("No user found in database");
     process.exit(1);
   }
 
@@ -15,23 +15,23 @@ async function main() {
   if (!quiz || quiz.questions.length === 0) {
     quiz = await prisma.quiz.create({
       data: {
-        title: 'Load Test Quiz',
-        description: 'Quiz for 600 concurrent users stress test',
+        title: "Load Test Quiz",
+        description: "Quiz for 600 concurrent users stress test",
         hostId: user.id,
         questions: {
           create: [
             {
-              text: 'Load Test Q1',
-              type: 'MULTIPLE_CHOICE',
+              text: "Load Test Q1",
+              type: "MULTIPLE_CHOICE",
               order: 0,
               points: 100,
               timeLimit: 60,
               options: {
                 create: [
-                  { text: 'Option A', isCorrect: 'true' },
-                  { text: 'Option B', isCorrect: 'false' },
-                  { text: 'Option C', isCorrect: 'false' },
-                  { text: 'Option D', isCorrect: 'false' },
+                  { text: "Option A", isCorrect: "true" },
+                  { text: "Option B", isCorrect: "false" },
+                  { text: "Option C", isCorrect: "false" },
+                  { text: "Option D", isCorrect: "false" },
                 ],
               },
             },
@@ -42,12 +42,12 @@ async function main() {
     });
   }
 
-  const pin = '999999';
+  const pin = "999999";
 
   await prisma.quizSession.upsert({
     where: { pin },
     update: {
-      status: 'LOBBY',
+      status: "LOBBY",
       currentQuestionIndex: 0,
       currentQuestionId: quiz.questions[0].id,
     },
@@ -55,7 +55,7 @@ async function main() {
       pin,
       quizId: quiz.id,
       hostId: user.id,
-      status: 'LOBBY',
+      status: "LOBBY",
       currentQuestionIndex: 0,
       currentQuestionId: quiz.questions[0].id,
     },

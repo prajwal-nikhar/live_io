@@ -1,15 +1,21 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CacheService } from '../cache/cache.service';
-import { v4 as uuidv4 } from 'uuid';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from "@nestjs/common";
+import { PrismaService } from "../prisma/prisma.service";
+import { CacheService } from "../cache/cache.service";
+import { v4 as uuidv4 } from "uuid";
 
 export type SessionState =
-  | 'LOBBY'
-  | 'QUESTION_ACTIVE'
-  | 'QUESTION_LOCKED'
-  | 'ANSWER_REVEAL'
-  | 'LEADERBOARD'
-  | 'QUIZ_FINISHED';
+  | "LOBBY"
+  | "QUESTION_ACTIVE"
+  | "QUESTION_LOCKED"
+  | "ANSWER_REVEAL"
+  | "LEADERBOARD"
+  | "QUIZ_FINISHED";
 
 @Injectable()
 export class RoomService {
@@ -25,22 +31,26 @@ export class RoomService {
   async createRoom(quizId: string, hostId: string) {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
-      include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } },
+      include: {
+        questions: { orderBy: { order: "asc" }, include: { options: true } },
+      },
     });
 
     if (!quiz) {
-      throw new NotFoundException('Quiz not found');
+      throw new NotFoundException("Quiz not found");
     }
 
     if (quiz.questions.length === 0) {
-      throw new BadRequestException('Cannot host a quiz with zero questions');
+      throw new BadRequestException("Cannot host a quiz with zero questions");
     }
 
-    let pin = '';
+    let pin = "";
     let isUnique = false;
     while (!isUnique) {
       pin = Math.floor(100000 + Math.random() * 900000).toString();
-      const existing = await this.prisma.quizSession.findUnique({ where: { pin } });
+      const existing = await this.prisma.quizSession.findUnique({
+        where: { pin },
+      });
       if (!existing) isUnique = true;
     }
 
@@ -51,7 +61,7 @@ export class RoomService {
         quizId,
         hostId,
         pin,
-        status: 'LOBBY',
+        status: "LOBBY",
         currentQuestionIndex: 0,
         currentQuestionId: firstQuestion.id,
       },
@@ -59,7 +69,7 @@ export class RoomService {
         quiz: {
           include: {
             questions: {
-              orderBy: { order: 'asc' },
+              orderBy: { order: "asc" },
               include: { options: true },
             },
           },
@@ -71,7 +81,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
-      status: 'LOBBY' as SessionState,
+      status: "LOBBY" as SessionState,
       currentQuestionIndex: 0,
       currentQuestionId: firstQuestion.id,
       questionsCount: quiz.questions.length,
@@ -96,7 +106,7 @@ export class RoomService {
         quiz: {
           include: {
             questions: {
-              orderBy: { order: 'asc' },
+              orderBy: { order: "asc" },
             },
           },
         },
@@ -106,7 +116,10 @@ export class RoomService {
     if (!session) return null;
 
     const questions = session.quiz?.questions || [];
-    const currentIdx = Math.min(session.currentQuestionIndex, questions.length - 1);
+    const currentIdx = Math.min(
+      session.currentQuestionIndex,
+      questions.length - 1,
+    );
     const currentQuestion = questions[currentIdx] || null;
 
     const roomState = {
@@ -117,8 +130,12 @@ export class RoomService {
       currentQuestionIndex: currentIdx,
       currentQuestionId: currentQuestion ? currentQuestion.id : null,
       questionsCount: questions.length,
-      questionStartTime: session.questionStartTime ? session.questionStartTime.toISOString() : null,
-      questionEndTime: session.questionEndTime ? session.questionEndTime.toISOString() : null,
+      questionStartTime: session.questionStartTime
+        ? session.questionStartTime.toISOString()
+        : null,
+      questionEndTime: session.questionEndTime
+        ? session.questionEndTime.toISOString()
+        : null,
     };
 
     await this.cache.set(`room:${pin}`, JSON.stringify(roomState), 14400);
@@ -133,11 +150,11 @@ export class RoomService {
   async joinPlayer(pin: string, name: string, socketId: string) {
     const room = await this.getRoomState(pin);
     if (!room) {
-      throw new NotFoundException('Quiz PIN code is invalid');
+      throw new NotFoundException("Quiz PIN code is invalid");
     }
 
-    if (room.status === 'QUIZ_FINISHED') {
-      throw new BadRequestException('Quiz session has finished');
+    if (room.status === "QUIZ_FINISHED") {
+      throw new BadRequestException("Quiz session has finished");
     }
 
     let player = await this.prisma.player.findUnique({
@@ -151,19 +168,23 @@ export class RoomService {
         where: { id: player.id },
         data: {
           socketId,
-          isConnected: 'true',
+          isConnected: "true",
           lastSeen: new Date(),
           reconnectToken,
           connectionVersion: { increment: 1 },
         },
       });
-      this.logger.log(`Existing Player ${name} rejoined/reconnected to room ${pin}`);
+      this.logger.log(
+        `Existing Player ${name} rejoined/reconnected to room ${pin}`,
+      );
       return player;
     }
 
     // New player registration allowed ONLY during LOBBY state
-    if (room.status !== 'LOBBY') {
-      throw new BadRequestException('Quiz has already started. New participant registrations are closed.');
+    if (room.status !== "LOBBY") {
+      throw new BadRequestException(
+        "Quiz has already started. New participant registrations are closed.",
+      );
     }
 
     const reconnectToken = uuidv4();
@@ -172,7 +193,7 @@ export class RoomService {
         sessionId: room.sessionId,
         name,
         socketId,
-        isConnected: 'true',
+        isConnected: "true",
         reconnectToken,
         lastSeen: new Date(),
       },
@@ -183,10 +204,15 @@ export class RoomService {
   }
 
   // Dedicated Kahoot-style Player Reconnect Flow
-  async reconnectPlayer(pin: string, playerId: string, reconnectToken: string, socketId: string) {
+  async reconnectPlayer(
+    pin: string,
+    playerId: string,
+    reconnectToken: string,
+    socketId: string,
+  ) {
     const room = await this.getRoomState(pin);
     if (!room) {
-      throw new NotFoundException('Quiz PIN code is invalid');
+      throw new NotFoundException("Quiz PIN code is invalid");
     }
 
     const player = await this.prisma.player.findUnique({
@@ -194,11 +220,13 @@ export class RoomService {
     });
 
     if (!player || player.sessionId !== room.sessionId) {
-      throw new NotFoundException('Player does not belong to this quiz session');
+      throw new NotFoundException(
+        "Player does not belong to this quiz session",
+      );
     }
 
     if (player.reconnectToken !== reconnectToken) {
-      throw new BadRequestException('Invalid reconnect token');
+      throw new BadRequestException("Invalid reconnect token");
     }
 
     // Update connection status
@@ -206,13 +234,15 @@ export class RoomService {
       where: { id: player.id },
       data: {
         socketId,
-        isConnected: 'true',
+        isConnected: "true",
         lastSeen: new Date(),
         connectionVersion: { increment: 1 },
       },
     });
 
-    this.logger.log(`Player ${player.name} (${player.id}) reconnected successfully to pin ${pin}`);
+    this.logger.log(
+      `Player ${player.name} (${player.id}) reconnected successfully to pin ${pin}`,
+    );
 
     // Skip leaderboard query during reconnect to avoid DB pool exhaustion
     const syncState = await this.getSyncState(pin, player.id, true);
@@ -232,13 +262,17 @@ export class RoomService {
       if (player && player.session) {
         await this.prisma.player.update({
           where: { id: player.id },
-          data: { isConnected: 'false', lastSeen: new Date() },
+          data: { isConnected: "false", lastSeen: new Date() },
         });
-        this.logger.log(`Player ${player.name} marked disconnected from pin ${player.session.pin}`);
+        this.logger.log(
+          `Player ${player.name} marked disconnected from pin ${player.session.pin}`,
+        );
         return { pin: player.session.pin, player };
       }
     } catch (err: any) {
-      this.logger.warn(`[Disconnect Handler Pool Warning] Socket ${socketId}: ${err.message}`);
+      this.logger.warn(
+        `[Disconnect Handler Pool Warning] Socket ${socketId}: ${err.message}`,
+      );
     }
     return null;
   }
@@ -252,10 +286,10 @@ export class RoomService {
 
     const players = await this.prisma.player.findMany({
       where: { sessionId: session.id },
-      orderBy: { score: 'desc' },
+      orderBy: { score: "desc" },
     });
 
-    const uniqueMap = new Map<string, typeof players[0]>();
+    const uniqueMap = new Map<string, (typeof players)[0]>();
     for (const player of players) {
       const normalized = player.name.trim().toLowerCase();
       if (!uniqueMap.has(normalized)) {
@@ -272,22 +306,35 @@ export class RoomService {
 
     const session = await this.prisma.quizSession.findUnique({
       where: { pin },
-      include: { quiz: { include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } } } },
+      include: {
+        quiz: {
+          include: {
+            questions: {
+              orderBy: { order: "asc" },
+              include: { options: true },
+            },
+          },
+        },
+      },
     });
 
     if (!session) {
       this.logger.error(`[Start Quiz Failed] Room PIN ${pin} not found`);
-      throw new NotFoundException('Quiz room session not found');
+      throw new NotFoundException("Quiz room session not found");
     }
 
-    if (hostId && hostId !== 'host_id_default' && session.hostId !== hostId) {
-      this.logger.warn(`[Start Quiz Rejected] Forbidden hostId ${hostId} for session host ${session.hostId}`);
-      throw new ForbiddenException('Only the host can start this quiz session');
+    if (hostId && hostId !== "host_id_default" && session.hostId !== hostId) {
+      this.logger.warn(
+        `[Start Quiz Rejected] Forbidden hostId ${hostId} for session host ${session.hostId}`,
+      );
+      throw new ForbiddenException("Only the host can start this quiz session");
     }
 
     if (!session.quiz?.questions || session.quiz.questions.length === 0) {
-      this.logger.error(`[Start Quiz Failed] Quiz ${session.quizId} has 0 questions`);
-      throw new BadRequestException('Cannot host a quiz with zero questions');
+      this.logger.error(
+        `[Start Quiz Failed] Quiz ${session.quizId} has 0 questions`,
+      );
+      throw new BadRequestException("Cannot host a quiz with zero questions");
     }
 
     const firstQuestion = session.quiz.questions[0];
@@ -297,7 +344,7 @@ export class RoomService {
     await this.prisma.quizSession.update({
       where: { id: session.id },
       data: {
-        status: 'QUESTION_ACTIVE',
+        status: "QUESTION_ACTIVE",
         currentQuestionIndex: 0,
         currentQuestionId: firstQuestion.id,
         questionStartTime: now,
@@ -305,13 +352,15 @@ export class RoomService {
       },
     });
 
-    this.logger.log(`[Session Updated] PIN ${pin} set to QUESTION_ACTIVE with question ${firstQuestion.id}`);
+    this.logger.log(
+      `[Session Updated] PIN ${pin} set to QUESTION_ACTIVE with question ${firstQuestion.id}`,
+    );
 
     const roomState = {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
-      status: 'QUESTION_ACTIVE' as SessionState,
+      status: "QUESTION_ACTIVE" as SessionState,
       currentQuestionIndex: 0,
       currentQuestionId: firstQuestion.id,
       questionStartTime: now.toISOString(),
@@ -319,7 +368,11 @@ export class RoomService {
     };
     await this.setRoomState(pin, roomState);
 
-    return { session, question: firstQuestion, remainingSeconds: firstQuestion.timeLimit };
+    return {
+      session,
+      question: firstQuestion,
+      remainingSeconds: firstQuestion.timeLimit,
+    };
   }
 
   // Host Action: Next Question
@@ -328,11 +381,23 @@ export class RoomService {
 
     const session = await this.prisma.quizSession.findUnique({
       where: { pin },
-      include: { quiz: { include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } } } },
+      include: {
+        quiz: {
+          include: {
+            questions: {
+              orderBy: { order: "asc" },
+              include: { options: true },
+            },
+          },
+        },
+      },
     });
 
-    if (!session || (hostId && hostId !== 'host_id_default' && session.hostId !== hostId)) {
-      throw new ForbiddenException('Only the host can advance questions');
+    if (
+      !session ||
+      (hostId && hostId !== "host_id_default" && session.hostId !== hostId)
+    ) {
+      throw new ForbiddenException("Only the host can advance questions");
     }
 
     const nextIndex = session.currentQuestionIndex + 1;
@@ -343,7 +408,7 @@ export class RoomService {
       await this.prisma.quizSession.update({
         where: { id: session.id },
         data: {
-          status: 'QUIZ_FINISHED',
+          status: "QUIZ_FINISHED",
           questionStartTime: null,
           questionEndTime: null,
         },
@@ -351,7 +416,7 @@ export class RoomService {
 
       const roomState = {
         ...session,
-        status: 'QUIZ_FINISHED' as SessionState,
+        status: "QUIZ_FINISHED" as SessionState,
         currentQuestionIndex: nextIndex,
         questionStartTime: null,
         questionEndTime: null,
@@ -369,7 +434,7 @@ export class RoomService {
     await this.prisma.quizSession.update({
       where: { id: session.id },
       data: {
-        status: 'QUESTION_ACTIVE',
+        status: "QUESTION_ACTIVE",
         currentQuestionIndex: nextIndex,
         currentQuestionId: nextQuestion.id,
         questionStartTime: now,
@@ -381,7 +446,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
-      status: 'QUESTION_ACTIVE' as SessionState,
+      status: "QUESTION_ACTIVE" as SessionState,
       currentQuestionIndex: nextIndex,
       currentQuestionId: nextQuestion.id,
       questionsCount: questions.length,
@@ -404,20 +469,20 @@ export class RoomService {
     this.clearTimer(pin);
 
     const room = await this.getRoomState(pin);
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room) throw new NotFoundException("Room not found");
 
     const now = new Date();
     await this.prisma.quizSession.update({
       where: { pin },
       data: {
-        status: 'QUESTION_LOCKED',
+        status: "QUESTION_LOCKED",
         questionEndTime: now,
       },
     });
 
     const updatedState = {
       ...room,
-      status: 'QUESTION_LOCKED' as SessionState,
+      status: "QUESTION_LOCKED" as SessionState,
       questionEndTime: now.toISOString(),
     };
     await this.setRoomState(pin, updatedState);
@@ -431,20 +496,20 @@ export class RoomService {
     this.clearTimer(pin);
 
     const room = await this.getRoomState(pin);
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room) throw new NotFoundException("Room not found");
 
     const now = new Date();
     await this.prisma.quizSession.update({
       where: { pin },
       data: {
-        status: 'ANSWER_REVEAL',
+        status: "ANSWER_REVEAL",
         questionEndTime: now,
       },
     });
 
     const updatedState = {
       ...room,
-      status: 'ANSWER_REVEAL' as SessionState,
+      status: "ANSWER_REVEAL" as SessionState,
       questionEndTime: now.toISOString(),
     };
     await this.setRoomState(pin, updatedState);
@@ -458,16 +523,16 @@ export class RoomService {
   // Host Action: Show Leaderboard
   async showLeaderboard(pin: string, hostId: string) {
     const room = await this.getRoomState(pin);
-    if (!room) throw new NotFoundException('Room not found');
+    if (!room) throw new NotFoundException("Room not found");
 
     await this.prisma.quizSession.update({
       where: { pin },
-      data: { status: 'LEADERBOARD' },
+      data: { status: "LEADERBOARD" },
     });
 
     const updatedState = {
       ...room,
-      status: 'LEADERBOARD' as SessionState,
+      status: "LEADERBOARD" as SessionState,
     };
     await this.setRoomState(pin, updatedState);
 
@@ -484,17 +549,27 @@ export class RoomService {
   }
 
   // Answer scoring algorithm (With atomic duplicate answer prevention)
-  async submitResponse(pin: string, playerId: string, questionId: string, optionId: string, textResponse?: string) {
+  async submitResponse(
+    pin: string,
+    playerId: string,
+    questionId: string,
+    optionId: string,
+    textResponse?: string,
+  ) {
     const room = await this.getRoomState(pin);
-    if (!room || (room.status !== 'QUESTION_ACTIVE' && room.status !== 'PLAYING')) {
-      throw new BadRequestException('Quiz is not currently accepting answers');
+    if (
+      !room ||
+      (room.status !== "QUESTION_ACTIVE" && room.status !== "PLAYING")
+    ) {
+      throw new BadRequestException("Quiz is not currently accepting answers");
     }
 
     // Check if player submitted before question end time
     if (room.questionEndTime) {
       const endTime = new Date(room.questionEndTime).getTime();
-      if (Date.now() > endTime + 2000) { // 2s grace period for network jitter
-        throw new BadRequestException('Time limit expired for this question');
+      if (Date.now() > endTime + 2000) {
+        // 2s grace period for network jitter
+        throw new BadRequestException("Time limit expired for this question");
       }
     }
 
@@ -502,7 +577,7 @@ export class RoomService {
       where: { id: playerId },
     });
 
-    if (!player) throw new NotFoundException('Player not found in this room');
+    if (!player) throw new NotFoundException("Player not found in this room");
 
     // Prevent duplicate responses
     const existing = await this.prisma.response.findUnique({
@@ -517,7 +592,7 @@ export class RoomService {
       include: { options: true, quiz: true },
     });
 
-    if (!question) throw new NotFoundException('Question not found');
+    if (!question) throw new NotFoundException("Question not found");
 
     const totalTime = question.timeLimit * 1000;
     let responseTimeMs = 1000;
@@ -526,40 +601,46 @@ export class RoomService {
       responseTimeMs = Math.max(100, Date.now() - startTime);
     }
 
-    let isCorrect = 'false';
-    if (question.type === 'MULTIPLE_CHOICE' || question.type === 'TRUE_FALSE') {
+    let isCorrect = "false";
+    if (question.type === "MULTIPLE_CHOICE" || question.type === "TRUE_FALSE") {
       const selectedOption = question.options.find((o) => o.id === optionId);
-      if (selectedOption && selectedOption.isCorrect === 'true') {
-        isCorrect = 'true';
+      if (selectedOption && selectedOption.isCorrect === "true") {
+        isCorrect = "true";
       }
-    } else if (question.type === 'OPEN_TEXT') {
-      const correctOption = question.options.find((o) => o.isCorrect === 'true');
+    } else if (question.type === "OPEN_TEXT") {
+      const correctOption = question.options.find(
+        (o) => o.isCorrect === "true",
+      );
       if (
         correctOption &&
         textResponse &&
-        textResponse.trim().toLowerCase() === correctOption.text.trim().toLowerCase()
+        textResponse.trim().toLowerCase() ===
+          correctOption.text.trim().toLowerCase()
       ) {
-        isCorrect = 'true';
+        isCorrect = "true";
       }
     } else {
-      isCorrect = 'true';
+      isCorrect = "true";
     }
 
     let pointsEarned = 0;
     let newStreak = player.streak;
 
-    if (isCorrect === 'true') {
+    if (isCorrect === "true") {
       const basePoints = question.points;
       const speedFactor = 1 - (responseTimeMs / totalTime) * 0.5;
-      const pointsWithSpeed = Math.round(basePoints * Math.max(0.5, speedFactor));
+      const pointsWithSpeed = Math.round(
+        basePoints * Math.max(0.5, speedFactor),
+      );
 
       newStreak += 1;
       const streakBonus = Math.min(5, newStreak) * 10;
-      const multiplier = parseFloat(question.quiz.pointsMultiplier as any) || 1.0;
+      const multiplier =
+        parseFloat(question.quiz.pointsMultiplier as any) || 1.0;
       pointsEarned = Math.round((pointsWithSpeed + streakBonus) * multiplier);
     } else {
       newStreak = 0;
-      if (question.quiz.negativeMarking === 'true') {
+      if (question.quiz.negativeMarking === "true") {
         pointsEarned = -Math.round(question.points * 0.25);
       }
     }
@@ -587,14 +668,14 @@ export class RoomService {
         },
       });
     } catch (err: any) {
-      if (err.code === 'P2002') {
+      if (err.code === "P2002") {
         return { duplicate: true };
       }
       throw err;
     }
 
     return {
-      isCorrect: isCorrect === 'true',
+      isCorrect: isCorrect === "true",
       pointsEarned,
       newScore: updatedPlayer.score,
       newStreak,
@@ -608,24 +689,33 @@ export class RoomService {
     if (!room) return null;
 
     let questions: any[] = [];
-    const cachedQuestions = await this.cache.get(`quiz:questions:${room.quizId}`);
+    const cachedQuestions = await this.cache.get(
+      `quiz:questions:${room.quizId}`,
+    );
     if (cachedQuestions) {
       questions = JSON.parse(cachedQuestions);
     } else {
       const qList = await this.prisma.question.findMany({
         where: { quizId: room.quizId },
-        orderBy: { order: 'asc' },
+        orderBy: { order: "asc" },
         include: { options: true },
       });
       questions = qList;
-      await this.cache.set(`quiz:questions:${room.quizId}`, JSON.stringify(qList), 3600);
+      await this.cache.set(
+        `quiz:questions:${room.quizId}`,
+        JSON.stringify(qList),
+        3600,
+      );
     }
 
-    const currentIdx = Math.min(room.currentQuestionIndex, Math.max(0, questions.length - 1));
+    const currentIdx = Math.min(
+      room.currentQuestionIndex,
+      Math.max(0, questions.length - 1),
+    );
     const currentQuestion = questions[currentIdx] || null;
 
     let remainingSeconds = 0;
-    if (room.questionEndTime && room.status === 'QUESTION_ACTIVE') {
+    if (room.questionEndTime && room.status === "QUESTION_ACTIVE") {
       const endMs = new Date(room.questionEndTime).getTime();
       remainingSeconds = Math.max(0, Math.ceil((endMs - Date.now()) / 1000));
     }
@@ -636,7 +726,13 @@ export class RoomService {
     if (playerId) {
       const player = await this.prisma.player.findUnique({
         where: { id: playerId },
-        select: { id: true, name: true, score: true, streak: true, reconnectToken: true },
+        select: {
+          id: true,
+          name: true,
+          score: true,
+          streak: true,
+          reconnectToken: true,
+        },
       });
       if (player) {
         playerState = player;
@@ -653,7 +749,12 @@ export class RoomService {
     let leaderboard: any[] = [];
     if (!skipLeaderboard) {
       const players = await this.getPlayers(pin);
-      leaderboard = players.map((p) => ({ id: p.id, name: p.name, score: p.score, streak: p.streak }));
+      leaderboard = players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        score: p.score,
+        streak: p.streak,
+      }));
     }
 
     // Sanitize options for active question to prevent client cheating
@@ -671,8 +772,10 @@ export class RoomService {
           id: o.id,
           text: o.text,
           // Hide isCorrect status during active question phase
-          ...(room.status === 'ANSWER_REVEAL' || room.status === 'LEADERBOARD' || room.status === 'QUIZ_FINISHED'
-            ? { isCorrect: o.isCorrect === 'true' }
+          ...(room.status === "ANSWER_REVEAL" ||
+          room.status === "LEADERBOARD" ||
+          room.status === "QUIZ_FINISHED"
+            ? { isCorrect: o.isCorrect === "true" }
             : {}),
         })),
       };
@@ -709,13 +812,13 @@ export class RoomService {
       return {
         id: o.id,
         text: o.text,
-        isCorrect: o.isCorrect === 'true',
+        isCorrect: o.isCorrect === "true",
         count,
       };
     });
 
     const totalResponses = responses.length;
-    const correctCount = responses.filter((r) => r.isCorrect === 'true').length;
+    const correctCount = responses.filter((r) => r.isCorrect === "true").length;
 
     return {
       questionText: question.text,
@@ -734,7 +837,11 @@ export class RoomService {
   async resetLoadTestRoom(pin: string) {
     const session = await this.prisma.quizSession.findUnique({
       where: { pin },
-      select: { id: true, quizId: true, quiz: { select: { questions: { select: { id: true } } } } },
+      select: {
+        id: true,
+        quizId: true,
+        quiz: { select: { questions: { select: { id: true } } } },
+      },
     });
 
     if (!session) {
@@ -748,7 +855,9 @@ export class RoomService {
       await this.prisma.response.deleteMany({
         where: { questionId: { in: questionIds } },
       });
-      this.logger.log(`[Reset] Deleted responses for ${questionIds.length} questions`);
+      this.logger.log(
+        `[Reset] Deleted responses for ${questionIds.length} questions`,
+      );
     }
 
     // Delete all players for this session
@@ -762,7 +871,7 @@ export class RoomService {
     await this.prisma.quizSession.update({
       where: { pin },
       data: {
-        status: 'LOBBY',
+        status: "LOBBY",
         currentQuestionIndex: 0,
         currentQuestionId: firstQuestionId,
         questionStartTime: null,
@@ -779,7 +888,7 @@ export class RoomService {
       pin,
       sessionId: session.id,
       quizId: session.quizId,
-      status: 'LOBBY' as SessionState,
+      status: "LOBBY" as SessionState,
       currentQuestionIndex: 0,
       currentQuestionId: firstQuestionId,
       questionsCount: questionIds.length,
@@ -788,6 +897,8 @@ export class RoomService {
     };
     await this.cache.set(`room:${pin}`, JSON.stringify(roomState), 14400);
 
-    this.logger.log(`[Reset] Room ${pin} fully reset to LOBBY (DB + cache cleared)`);
+    this.logger.log(
+      `[Reset] Room ${pin} fully reset to LOBBY (DB + cache cleared)`,
+    );
   }
 }

@@ -9,18 +9,22 @@ It proves our platform's ability to maintain **sub-200ms real-time event updates
 Save this file as `tests/load-test.ts` and run using `npx ts-node tests/load-test.ts`.
 
 ```typescript
-import { io, Socket } from 'socket.io-client';
+import { io, Socket } from "socket.io-client";
 
-const BACKEND_URL = 'http://localhost:4000';
-const TEST_PIN = '123456'; // Target test room PIN
+const BACKEND_URL = "http://localhost:4000";
+const TEST_PIN = "123456"; // Target test room PIN
 const CONCURRENT_CLIENTS = 800; // Number of mock players to spin up (Supports 800+ concurrent players easily)
 const sockets: Socket[] = [];
 
-console.log(`==================================================================`);
+console.log(
+  `==================================================================`,
+);
 console.log(`🔥 STARTING CONCURRENCY & SUB-200MS LATENCY AUDIT ON AURATIVE 🔥`);
 console.log(`• Targeting Backend: ${BACKEND_URL}`);
 console.log(`• Simulating: ${CONCURRENT_CLIENTS} simultaneous players`);
-console.log(`==================================================================`);
+console.log(
+  `==================================================================`,
+);
 
 let connectedCount = 0;
 let successResponses = 0;
@@ -30,23 +34,25 @@ const latencies: number[] = [];
 function connectPlayer(idx: number) {
   const name = `StressUser_${idx}`;
   const socket = io(BACKEND_URL, {
-    transports: ['websocket'],
+    transports: ["websocket"],
     forceNew: true,
   });
 
-  socket.on('connect', () => {
+  socket.on("connect", () => {
     // Send join request immediately
-    socket.emit('player_join', { pin: TEST_PIN, name });
+    socket.emit("player_join", { pin: TEST_PIN, name });
   });
 
-  socket.on('join_success', (data) => {
+  socket.on("join_success", (data) => {
     connectedCount++;
     if (connectedCount % 10 === 0 || connectedCount === CONCURRENT_CLIENTS) {
-      console.log(`[Lobby Update] ${connectedCount}/${CONCURRENT_CLIENTS} players joined successfully.`);
+      console.log(
+        `[Lobby Update] ${connectedCount}/${CONCURRENT_CLIENTS} players joined successfully.`,
+      );
     }
 
     // Set up real-time listener for question prompts
-    socket.on('question_start', (question) => {
+    socket.on("question_start", (question) => {
       // Race condition simulated: all players attempt to answer within milliseconds of each other
       const delay = Math.random() * 150; // Random delay between 0-150ms
       setTimeout(() => {
@@ -54,16 +60,16 @@ function connectPlayer(idx: number) {
         startTimes.set(socket.id!, timestamp);
 
         // Submit mock answer
-        socket.emit('submit_answer', {
+        socket.emit("submit_answer", {
           pin: TEST_PIN,
           name,
           questionId: question.id,
-          optionId: question.options[0]?.id || 'mock-option-1',
+          optionId: question.options[0]?.id || "mock-option-1",
         });
       }, delay);
     });
 
-    socket.on('answer_acknowledged', (feedback) => {
+    socket.on("answer_acknowledged", (feedback) => {
       const receiveTime = Date.now();
       const sendTime = startTimes.get(socket.id!);
       if (sendTime) {
@@ -78,7 +84,7 @@ function connectPlayer(idx: number) {
     });
   });
 
-  socket.on('join_error', (err) => {
+  socket.on("join_error", (err) => {
     console.error(`❌ Player join failed: ${err.message}`);
   });
 
@@ -91,20 +97,32 @@ function reportMetrics() {
   const max = Math.max(...latencies);
   const min = Math.min(...latencies);
 
-  console.log(`\n==================================================================`);
+  console.log(
+    `\n==================================================================`,
+  );
   console.log(`📊 CONCURRENCY METRICS REPORT: SUCCESFULLY AUDITED`);
-  console.log(`==================================================================`);
-  console.log(`✅ Success Responses Recorded: ${successResponses}/${CONCURRENT_CLIENTS}`);
+  console.log(
+    `==================================================================`,
+  );
+  console.log(
+    `✅ Success Responses Recorded: ${successResponses}/${CONCURRENT_CLIENTS}`,
+  );
   console.log(`⚡ Minimum Round-Trip Latency: ${min}ms`);
   console.log(`⚡ Maximum Round-Trip Latency: ${max}ms`);
   console.log(`⚡ Average Round-Trip Latency: ${average.toFixed(1)}ms`);
-  
+
   if (average < 200) {
-    console.log(`\n🏆 PERFORMANCE VERDICT: PASSED (Sub-200ms Real-Time Limit Maintained!)`);
+    console.log(
+      `\n🏆 PERFORMANCE VERDICT: PASSED (Sub-200ms Real-Time Limit Maintained!)`,
+    );
   } else {
-    console.log(`\n⚠️ PERFORMANCE VERDICT: DEGRADED (Average latency exceeds 200ms limit)`);
+    console.log(
+      `\n⚠️ PERFORMANCE VERDICT: DEGRADED (Average latency exceeds 200ms limit)`,
+    );
   }
-  console.log(`==================================================================\n`);
+  console.log(
+    `==================================================================\n`,
+  );
 
   // Disconnect all sockets
   sockets.forEach((s) => s.disconnect());

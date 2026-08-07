@@ -1,5 +1,5 @@
-import { io, Socket } from 'socket.io-client';
-import { getBackendUrl, getSocketUrl, getE2BTrafficAccessToken } from './api';
+import { io, Socket } from "socket.io-client";
+import { getBackendUrl, getSocketUrl, getE2BTrafficAccessToken } from "./api";
 
 let socket: Socket | null = null;
 
@@ -12,7 +12,7 @@ export const getSocket = (): Socket => {
   console.log(`Connecting Socket.IO to ${url}...`);
 
   const socketOptions: any = {
-    transports: ['websocket', 'polling'],
+    transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionAttempts: 10,
     reconnectionDelay: 1000,
@@ -21,25 +21,25 @@ export const getSocket = (): Socket => {
 
   if (e2bToken) {
     socketOptions.extraHeaders = {
-      'e2b-traffic-access-token': e2bToken,
+      "e2b-traffic-access-token": e2bToken,
     };
     socketOptions.query = {
-      'e2b-traffic-access-token': e2bToken,
+      "e2b-traffic-access-token": e2bToken,
     };
   }
 
   socket = io(url, socketOptions);
 
-  socket.on('connect', () => {
-    console.log('[Socket] Real-Time Gateway Connected:', socket?.id);
+  socket.on("connect", () => {
+    console.log("[Socket] Real-Time Gateway Connected:", socket?.id);
   });
 
-  socket.on('disconnect', (reason) => {
-    console.warn('[Socket] Real-Time Gateway Disconnected. Reason:', reason);
+  socket.on("disconnect", (reason) => {
+    console.warn("[Socket] Real-Time Gateway Disconnected. Reason:", reason);
   });
 
-  socket.on('connect_error', (error) => {
-    console.error('[Socket] Connection Error:', error);
+  socket.on("connect_error", (error) => {
+    console.error("[Socket] Connection Error:", error);
   });
 
   return socket;
@@ -61,7 +61,7 @@ export interface AckResponse<T = any> {
 export const emitWithTimeout = <T = any>(
   event: string,
   data: any,
-  timeoutMs: number = 10000
+  timeoutMs: number = 10000,
 ): Promise<AckResponse<T>> => {
   return new Promise((resolve) => {
     const s = getSocket();
@@ -71,10 +71,13 @@ export const emitWithTimeout = <T = any>(
     timer = setTimeout(() => {
       if (!resolved) {
         resolved = true;
-        console.warn(`[Socket Timeout] Event '${event}' timed out after ${timeoutMs}ms`);
+        console.warn(
+          `[Socket Timeout] Event '${event}' timed out after ${timeoutMs}ms`,
+        );
         resolve({
           success: false,
-          message: 'Connection timed out. Please check your network and try again.',
+          message:
+            "Connection timed out. Please check your network and try again.",
         });
       }
     }, timeoutMs);
@@ -84,7 +87,10 @@ export const emitWithTimeout = <T = any>(
         resolved = true;
         if (timer) clearTimeout(timer);
         if (!response) {
-          resolve({ success: false, message: 'Server returned empty response' });
+          resolve({
+            success: false,
+            message: "Server returned empty response",
+          });
         } else {
           resolve(response);
         }

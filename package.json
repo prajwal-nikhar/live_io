@@ -1,0 +1,33 @@
+{
+  "name": "enterprise-quiz-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise-Grade Real-Time Quiz Platform Monorepo",
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",
+    "format:check": "prettier --check \"**/*.{ts,js,json,md,yml}\"",
+    "format:write": "prettier --write \"**/*.{ts,js,json,md,yml}\"",
+    "type-check": "npm run build --prefix backend && npm run build --prefix frontend",
+    "test": "npm test --prefix backend",
+    "test:coverage": "npm test --prefix backend -- --coverage",
+    "build": "npm run build --prefix backend && npm run build --prefix frontend",
+    "docker:build": "docker build -f Dockerfile.backend -t live-io-backend:latest . && docker build -f Dockerfile.frontend -t live-io-frontend:latest .",
+    "prisma:generate": "npm run prisma:generate --prefix backend",
+    "prisma:validate": "cd backend && npx prisma validate",
+    "smoke-test": "node scripts/post-deploy-smoke-test.js"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.2",
+    "prettier": "^3.2.5"
+  },
+  "lint-staged": {
+    "backend/src/**/*.ts": [
+      "prettier --write"
+    ],
+    "frontend/src/**/*.{ts,tsx}": [
+      "prettier --write"
+    ]
+  }
+}

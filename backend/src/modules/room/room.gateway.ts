@@ -6,17 +6,17 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { RoomService } from './room.service';
-import { QuizService } from '../quiz/quiz.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { MetricsService } from '../metrics/metrics.service';
-import { Logger, UseGuards as UseGuardsCommon } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
-import { WsThrottlerGuard } from '../../common/guards/ws-throttler.guard';
-import { WsValidationPipe } from '../../common/pipes/ws-validation.pipe';
-import { sanitizeInput } from '../../common/utils/sanitization.util';
+} from "@nestjs/websockets";
+import { Server, Socket } from "socket.io";
+import { RoomService } from "./room.service";
+import { QuizService } from "../quiz/quiz.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { MetricsService } from "../metrics/metrics.service";
+import { Logger, UseGuards as UseGuardsCommon } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { WsThrottlerGuard } from "../../common/guards/ws-throttler.guard";
+import { WsValidationPipe } from "../../common/pipes/ws-validation.pipe";
+import { sanitizeInput } from "../../common/utils/sanitization.util";
 import {
   JoinRoomDto,
   SubmitAnswerDto,
@@ -24,7 +24,7 @@ import {
   StartQuizDto,
   ReconnectPlayerDto,
   HostActionDto,
-} from './dto/room.dtos';
+} from "./dto/room.dtos";
 
 export interface AckResult<T = any> {
   success: boolean;
@@ -34,9 +34,9 @@ export interface AckResult<T = any> {
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: "*",
   },
-  transports: ['websocket', 'polling'],
+  transports: ["websocket", "polling"],
   pingInterval: 10000,
   pingTimeout: 10000,
   maxHttpBufferSize: 1e6,
@@ -64,7 +64,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private parsePayload(data: any): any {
     if (!data) return {};
-    if (typeof data === 'string') {
+    if (typeof data === "string") {
       try {
         return JSON.parse(data);
       } catch {
@@ -74,34 +74,46 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return data;
   }
 
-  private async validatePayload<T extends object>(dtoClass: new () => T, data: any): Promise<T> {
+  private async validatePayload<T extends object>(
+    dtoClass: new () => T,
+    data: any,
+  ): Promise<T> {
     const parsed = this.parsePayload(data);
-    return await this.wsValidationPipe.transform(parsed, { type: 'body', metatype: dtoClass });
+    return await this.wsValidationPipe.transform(parsed, {
+      type: "body",
+      metatype: dtoClass,
+    });
   }
 
   async handleConnection(client: Socket) {
     try {
       const token =
         client.handshake.auth?.token ||
-        client.handshake.headers?.authorization?.replace('Bearer ', '');
+        client.handshake.headers?.authorization?.replace("Bearer ", "");
 
       if (token) {
         const jwtSecret = process.env.JWT_SECRET;
-        if (!jwtSecret && process.env.NODE_ENV === 'production') {
-          throw new Error('CRITICAL: JWT_SECRET environment variable is missing');
+        if (!jwtSecret && process.env.NODE_ENV === "production") {
+          throw new Error(
+            "CRITICAL: JWT_SECRET environment variable is missing",
+          );
         }
         const payload = this.jwtService.verify(token, {
-          secret: jwtSecret || 'dev-fallback-secret-key-change-in-prod',
+          secret: jwtSecret || "dev-fallback-secret-key-change-in-prod",
         });
         client.data.user = payload;
-        this.logger.log(`[Socket Connected] ID: ${client.id} (User: ${payload.email})`);
+        this.logger.log(
+          `[Socket Connected] ID: ${client.id} (User: ${payload.email})`,
+        );
       } else {
         this.logger.log(`[Socket Connected] ID: ${client.id} (Anonymous)`);
       }
 
       this.metricsService.activeSocketsGauge.inc();
     } catch (err: any) {
-      this.logger.warn(`[Socket Auth Check Failed] ID: ${client.id} Reason: ${err.message}`);
+      this.logger.warn(
+        `[Socket Auth Check Failed] ID: ${client.id} Reason: ${err.message}`,
+      );
       this.metricsService.activeSocketsGauge.inc();
     }
   }
@@ -113,7 +125,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const result = await this.roomService.handlePlayerDisconnect(client.id);
     if (result) {
       const { pin, player } = result;
-      this.server.to(`room:${pin}`).emit('player:left', {
+      this.server.to(`room:${pin}`).emit("player:left", {
         name: player.name,
         socketId: client.id,
       });
@@ -122,15 +134,17 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // HOST: Create Room
-  @SubscribeMessage('host_create_room')
-  @SubscribeMessage('host:create_room')
+  @SubscribeMessage("host_create_room")
+  @SubscribeMessage("host:create_room")
   async handleCreateRoom(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
       const dto = await this.validatePayload(CreateRoomDto, data);
-      this.logger.log(`[Host Action] Host ${dto.hostId} creating room for quiz ${dto.quizId} (Socket: ${client.id})`);
+      this.logger.log(
+        `[Host Action] Host ${dto.hostId} creating room for quiz ${dto.quizId} (Socket: ${client.id})`,
+      );
       const session = await this.roomService.createRoom(dto.quizId, dto.hostId);
 
       client.join(`room:${session.pin}`);
@@ -142,15 +156,22 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         quiz: session.quiz,
       };
 
-      client.emit('room_created', payload);
+      client.emit("room_created", payload);
       this.metricsService.activeRoomsGauge.inc();
 
-      this.logger.log(`[Room Created] PIN: ${session.pin} SessionId: ${session.id}`);
+      this.logger.log(
+        `[Room Created] PIN: ${session.pin} SessionId: ${session.id}`,
+      );
       return { success: true, data: payload };
     } catch (error: any) {
       this.logger.error(`[Room Creation Failed] ${error.message}`);
-      client.emit('error', { message: error.message || 'Failed to create room' });
-      return { success: false, message: error.message || 'Failed to create room' };
+      client.emit("error", {
+        message: error.message || "Failed to create room",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to create room",
+      };
     }
   }
 
@@ -164,10 +185,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       try {
         const timerStart = Date.now();
         const players = await this.roomService.getPlayers(pin);
-        this.server.to(`room:${pin}`).emit('lobby_update', players);
-        this.metricsService.broadcastLatencyHistogram.observe((Date.now() - timerStart) / 1000);
+        this.server.to(`room:${pin}`).emit("lobby_update", players);
+        this.metricsService.broadcastLatencyHistogram.observe(
+          (Date.now() - timerStart) / 1000,
+        );
       } catch (err: any) {
-        this.logger.error(`[Lobby Update Broadcast Error] PIN ${pin}: ${err.message}`);
+        this.logger.error(
+          `[Lobby Update Broadcast Error] PIN ${pin}: ${err.message}`,
+        );
       }
     }, 250);
 
@@ -175,8 +200,8 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   // PLAYER: Join Room
-  @SubscribeMessage('player:join')
-  @SubscribeMessage('player_join')
+  @SubscribeMessage("player:join")
+  @SubscribeMessage("player_join")
   async handleJoinRoom(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -186,9 +211,15 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const dto = await this.validatePayload(JoinRoomDto, data);
       const pin = dto.pin;
       const sanitizedName = sanitizeInput(dto.name);
-      this.logger.log(`[Join Requested] Player '${sanitizedName}' requesting join for PIN ${pin} (Socket: ${client.id})`);
+      this.logger.log(
+        `[Join Requested] Player '${sanitizedName}' requesting join for PIN ${pin} (Socket: ${client.id})`,
+      );
 
-      const player = await this.roomService.joinPlayer(pin, sanitizedName, client.id);
+      const player = await this.roomService.joinPlayer(
+        pin,
+        sanitizedName,
+        client.id,
+      );
       client.join(`room:${pin}`);
 
       const responsePayload = {
@@ -201,24 +232,31 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         },
       };
 
-      client.emit('player:joined', responsePayload);
-      client.emit('join_success', responsePayload);
+      client.emit("player:joined", responsePayload);
+      client.emit("join_success", responsePayload);
 
       this.scheduleLobbyUpdate(pin);
       this.metricsService.connectedPlayersGauge.inc();
-      this.metricsService.joinLatencyHistogram.observe((Date.now() - startTime) / 1000);
+      this.metricsService.joinLatencyHistogram.observe(
+        (Date.now() - startTime) / 1000,
+      );
 
-      this.logger.log(`[Join Success] Player '${sanitizedName}' (${player.id}) joined PIN ${pin}`);
+      this.logger.log(
+        `[Join Success] Player '${sanitizedName}' (${player.id}) joined PIN ${pin}`,
+      );
       return { success: true, data: responsePayload };
     } catch (error: any) {
       this.logger.warn(`[Join Failed] Socket ${client.id}: ${error.message}`);
-      client.emit('error', { message: error.message || 'Failed to join room' });
-      return { success: false, message: error.message || 'Failed to join room' };
+      client.emit("error", { message: error.message || "Failed to join room" });
+      return {
+        success: false,
+        message: error.message || "Failed to join room",
+      };
     }
   }
 
   // PLAYER: Dedicated Reconnect Handler
-  @SubscribeMessage('player:reconnect')
+  @SubscribeMessage("player:reconnect")
   async handlePlayerReconnect(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -226,7 +264,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const dto = await this.validatePayload(ReconnectPlayerDto, data);
       const { pin, playerId, reconnectToken } = dto;
-      this.logger.log(`[Reconnect Requested] Player ${playerId} for PIN ${pin} (Socket: ${client.id})`);
+      this.logger.log(
+        `[Reconnect Requested] Player ${playerId} for PIN ${pin} (Socket: ${client.id})`,
+      );
 
       const { player, syncState } = await this.roomService.reconnectPlayer(
         pin,
@@ -248,44 +288,57 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         syncState,
       };
 
-      client.emit('player:reconnected', responsePayload);
-      client.emit('session:sync', syncState);
+      client.emit("player:reconnected", responsePayload);
+      client.emit("session:sync", syncState);
 
       this.scheduleLobbyUpdate(pin);
       this.metricsService.connectedPlayersGauge.inc();
 
-      this.logger.log(`[Reconnect Success] Player '${player.name}' restored for PIN ${pin}`);
+      this.logger.log(
+        `[Reconnect Success] Player '${player.name}' restored for PIN ${pin}`,
+      );
       return { success: true, data: responsePayload };
     } catch (error: any) {
-      this.logger.warn(`[Reconnect Failed] Socket ${client.id}: ${error.message}`);
-      client.emit('reconnect:failed', { message: error.message });
-      return { success: false, message: error.message || 'Failed to reconnect' };
+      this.logger.warn(
+        `[Reconnect Failed] Socket ${client.id}: ${error.message}`,
+      );
+      client.emit("reconnect:failed", { message: error.message });
+      return {
+        success: false,
+        message: error.message || "Failed to reconnect",
+      };
     }
   }
 
   // PLAYER: Explicit State Synchronization
-  @SubscribeMessage('player:sync')
+  @SubscribeMessage("player:sync")
   async handlePlayerSync(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
   ): Promise<AckResult> {
     try {
       const parsed = this.parsePayload(data);
-      const syncState = await this.roomService.getSyncState(parsed?.pin, parsed?.playerId);
+      const syncState = await this.roomService.getSyncState(
+        parsed?.pin,
+        parsed?.playerId,
+      );
       if (syncState) {
-        client.emit('session:sync', syncState);
+        client.emit("session:sync", syncState);
         return { success: true, data: syncState };
       }
-      return { success: false, message: 'Room or session state not found' };
+      return { success: false, message: "Room or session state not found" };
     } catch (error: any) {
-      return { success: false, message: error.message || 'Failed to sync session state' };
+      return {
+        success: false,
+        message: error.message || "Failed to sync session state",
+      };
     }
   }
 
   // HOST: Start Quiz
-  @SubscribeMessage('host:start')
-  @SubscribeMessage('host_start_quiz')
-  @SubscribeMessage('host_start_game')
+  @SubscribeMessage("host:start")
+  @SubscribeMessage("host_start_quiz")
+  @SubscribeMessage("host_start_game")
   async handleStartQuiz(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -294,9 +347,14 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const dto = await this.validatePayload(StartQuizDto, data);
       const pin = dto.pin;
       const hostId = dto.hostId || client.data.user?.id;
-      this.logger.log(`[Host Action] Start quiz for PIN ${pin} (Host: ${hostId || 'anonymous'}, Socket: ${client.id})`);
+      this.logger.log(
+        `[Host Action] Start quiz for PIN ${pin} (Host: ${hostId || "anonymous"}, Socket: ${client.id})`,
+      );
 
-      const { question, remainingSeconds } = await this.roomService.startQuiz(pin, hostId);
+      const { question, remainingSeconds } = await this.roomService.startQuiz(
+        pin,
+        hostId,
+      );
       const syncState = await this.roomService.getSyncState(pin);
 
       const responsePayload = {
@@ -307,23 +365,34 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       };
 
       const timerStart = Date.now();
-      this.server.to(`room:${pin}`).emit('question:start', responsePayload);
-      this.server.to(`room:${pin}`).emit('quiz_started', responsePayload);
-      this.server.to(`room:${pin}`).emit('session:sync', syncState);
-      this.metricsService.broadcastLatencyHistogram.observe((Date.now() - timerStart) / 1000);
+      this.server.to(`room:${pin}`).emit("question:start", responsePayload);
+      this.server.to(`room:${pin}`).emit("quiz_started", responsePayload);
+      this.server.to(`room:${pin}`).emit("session:sync", syncState);
+      this.metricsService.broadcastLatencyHistogram.observe(
+        (Date.now() - timerStart) / 1000,
+      );
 
-      this.logger.log(`[Host Acknowledged] Successfully started quiz for PIN ${pin}`);
+      this.logger.log(
+        `[Host Acknowledged] Successfully started quiz for PIN ${pin}`,
+      );
       return { success: true, data: { question, remainingSeconds, syncState } };
     } catch (error: any) {
-      this.logger.error(`[Start Quiz Failed] Socket ${client.id}: ${error.message}`);
-      client.emit('error', { message: error.message || 'Failed to start quiz' });
-      return { success: false, message: error.message || 'Failed to start quiz' };
+      this.logger.error(
+        `[Start Quiz Failed] Socket ${client.id}: ${error.message}`,
+      );
+      client.emit("error", {
+        message: error.message || "Failed to start quiz",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to start quiz",
+      };
     }
   }
 
   // HOST: Skip Question
-  @SubscribeMessage('host:skip')
-  @SubscribeMessage('host_skip_question')
+  @SubscribeMessage("host:skip")
+  @SubscribeMessage("host_skip_question")
   async handleSkipQuestion(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -331,24 +400,34 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const dto = await this.validatePayload(HostActionDto, data);
       const { pin, hostId } = dto;
-      this.logger.log(`[Host Action] Skip question for PIN ${pin} (Socket: ${client.id})`);
+      this.logger.log(
+        `[Host Action] Skip question for PIN ${pin} (Socket: ${client.id})`,
+      );
 
-      const { stats } = await this.roomService.skipQuestion(pin, hostId || 'host_id_default');
+      const { stats } = await this.roomService.skipQuestion(
+        pin,
+        hostId || "host_id_default",
+      );
       const syncState = await this.roomService.getSyncState(pin);
 
-      this.server.to(`room:${pin}`).emit('question:skip', { pin, stats });
-      this.server.to(`room:${pin}`).emit('session:sync', syncState);
+      this.server.to(`room:${pin}`).emit("question:skip", { pin, stats });
+      this.server.to(`room:${pin}`).emit("session:sync", syncState);
 
       return { success: true, data: { stats, syncState } };
     } catch (error: any) {
-      client.emit('error', { message: error.message || 'Failed to skip question' });
-      return { success: false, message: error.message || 'Failed to skip question' };
+      client.emit("error", {
+        message: error.message || "Failed to skip question",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to skip question",
+      };
     }
   }
 
   // HOST: Show Answer
-  @SubscribeMessage('host:showAnswer')
-  @SubscribeMessage('host_show_answer')
+  @SubscribeMessage("host:showAnswer")
+  @SubscribeMessage("host_show_answer")
   async handleShowAnswer(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -356,25 +435,37 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const dto = await this.validatePayload(HostActionDto, data);
       const { pin, hostId } = dto;
-      this.logger.log(`[Host Action] Show answer for PIN ${pin} (Socket: ${client.id})`);
+      this.logger.log(
+        `[Host Action] Show answer for PIN ${pin} (Socket: ${client.id})`,
+      );
 
-      const { stats, leaderboard } = await this.roomService.showAnswer(pin, hostId || 'host_id_default');
+      const { stats, leaderboard } = await this.roomService.showAnswer(
+        pin,
+        hostId || "host_id_default",
+      );
       const syncState = await this.roomService.getSyncState(pin);
 
-      this.server.to(`room:${pin}`).emit('answer:reveal', { pin, stats, leaderboard });
-      this.server.to(`room:${pin}`).emit('show_answer', { stats, leaderboard });
-      this.server.to(`room:${pin}`).emit('session:sync', syncState);
+      this.server
+        .to(`room:${pin}`)
+        .emit("answer:reveal", { pin, stats, leaderboard });
+      this.server.to(`room:${pin}`).emit("show_answer", { stats, leaderboard });
+      this.server.to(`room:${pin}`).emit("session:sync", syncState);
 
       return { success: true, data: { stats, leaderboard, syncState } };
     } catch (error: any) {
-      client.emit('error', { message: error.message || 'Failed to show answer' });
-      return { success: false, message: error.message || 'Failed to show answer' };
+      client.emit("error", {
+        message: error.message || "Failed to show answer",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to show answer",
+      };
     }
   }
 
   // HOST: Show Leaderboard
-  @SubscribeMessage('host:showLeaderboard')
-  @SubscribeMessage('host_show_leaderboard')
+  @SubscribeMessage("host:showLeaderboard")
+  @SubscribeMessage("host_show_leaderboard")
   async handleShowLeaderboard(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -382,22 +473,30 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const dto = await this.validatePayload(HostActionDto, data);
       const { pin, hostId } = dto;
-      const { leaderboard } = await this.roomService.showLeaderboard(pin, hostId || 'host_id_default');
+      const { leaderboard } = await this.roomService.showLeaderboard(
+        pin,
+        hostId || "host_id_default",
+      );
       const syncState = await this.roomService.getSyncState(pin);
 
-      this.server.to(`room:${pin}`).emit('leaderboard:update', { leaderboard });
-      this.server.to(`room:${pin}`).emit('session:sync', syncState);
+      this.server.to(`room:${pin}`).emit("leaderboard:update", { leaderboard });
+      this.server.to(`room:${pin}`).emit("session:sync", syncState);
 
       return { success: true, data: { leaderboard, syncState } };
     } catch (error: any) {
-      client.emit('error', { message: error.message || 'Failed to show leaderboard' });
-      return { success: false, message: error.message || 'Failed to show leaderboard' };
+      client.emit("error", {
+        message: error.message || "Failed to show leaderboard",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to show leaderboard",
+      };
     }
   }
 
   // HOST: Next Question
-  @SubscribeMessage('host:next')
-  @SubscribeMessage('host_next_question')
+  @SubscribeMessage("host:next")
+  @SubscribeMessage("host_next_question")
   async handleNextQuestion(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -405,28 +504,34 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const dto = await this.validatePayload(HostActionDto, data);
       const { pin, hostId } = dto;
-      const result = await this.roomService.nextQuestion(pin, hostId || 'host_id_default');
+      const result = await this.roomService.nextQuestion(
+        pin,
+        hostId || "host_id_default",
+      );
 
       if (result.finished) {
-        this.server.to(`room:${pin}`).emit('quiz:finished', {
+        this.server.to(`room:${pin}`).emit("quiz:finished", {
           leaderboard: result.leaderboard,
         });
-        this.server.to(`room:${pin}`).emit('quiz_finished', {
+        this.server.to(`room:${pin}`).emit("quiz_finished", {
           leaderboard: result.leaderboard,
         });
         this.metricsService.activeRoomsGauge.dec();
-        return { success: true, data: { finished: true, leaderboard: result.leaderboard } };
+        return {
+          success: true,
+          data: { finished: true, leaderboard: result.leaderboard },
+        };
       } else {
         const syncState = await this.roomService.getSyncState(pin);
 
-        this.server.to(`room:${pin}`).emit('question:start', {
+        this.server.to(`room:${pin}`).emit("question:start", {
           question: result.question,
           questionIndex: result.questionIndex,
           totalQuestions: result.totalQuestions,
           remainingSeconds: result.remainingSeconds,
         });
 
-        this.server.to(`room:${pin}`).emit('session:sync', syncState);
+        this.server.to(`room:${pin}`).emit("session:sync", syncState);
 
         return {
           success: true,
@@ -439,14 +544,19 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         };
       }
     } catch (error: any) {
-      client.emit('error', { message: error.message || 'Failed to advance question' });
-      return { success: false, message: error.message || 'Failed to advance question' };
+      client.emit("error", {
+        message: error.message || "Failed to advance question",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to advance question",
+      };
     }
   }
 
   // PLAYER: Answer Question
-  @SubscribeMessage('player:answer')
-  @SubscribeMessage('player_submit_answer')
+  @SubscribeMessage("player:answer")
+  @SubscribeMessage("player_submit_answer")
   async handleSubmitAnswer(
     @MessageBody() data: any,
     @ConnectedSocket() client: Socket,
@@ -455,7 +565,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const dto = await this.validatePayload(SubmitAnswerDto, data);
       const { pin, playerId, questionId, optionId, textResponse } = dto;
       const sanitizedText = sanitizeInput(textResponse);
-      this.logger.log(`[Answer Submission] Player ${playerId} question ${questionId} (Socket: ${client.id})`);
+      this.logger.log(
+        `[Answer Submission] Player ${playerId} question ${questionId} (Socket: ${client.id})`,
+      );
 
       const result = await this.roomService.submitResponse(
         pin,
@@ -466,7 +578,7 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       );
 
       if (result.duplicate) {
-        client.emit('answer:acknowledged', { duplicate: true });
+        client.emit("answer:acknowledged", { duplicate: true });
         return { success: true, data: { duplicate: true } };
       }
 
@@ -478,17 +590,22 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         newStreak: result.newStreak,
       };
 
-      client.emit('answer:acknowledged', responsePayload);
+      client.emit("answer:acknowledged", responsePayload);
 
       const stats = await this.roomService.getQuestionStats(pin, questionId);
-      this.server.to(`host:${pin}`).emit('answer:progress', {
+      this.server.to(`host:${pin}`).emit("answer:progress", {
         totalResponses: stats?.totalResponses || 0,
       });
 
       return { success: true, data: responsePayload };
     } catch (error: any) {
-      client.emit('error', { message: error.message || 'Failed to submit answer' });
-      return { success: false, message: error.message || 'Failed to submit answer' };
+      client.emit("error", {
+        message: error.message || "Failed to submit answer",
+      });
+      return {
+        success: false,
+        message: error.message || "Failed to submit answer",
+      };
     }
   }
 }

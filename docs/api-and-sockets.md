@@ -11,8 +11,11 @@ All HTTP endpoints are prefixed with `/api` (or matching backend service routing
 ### Authentication Module
 
 #### `POST /auth/register`
+
 Creates a new user profile on the platform (Default role is `HOST`).
-* **Request Body:**
+
+- **Request Body:**
+
 ```json
 {
   "email": "professor@university.edu",
@@ -21,7 +24,9 @@ Creates a new user profile on the platform (Default role is `HOST`).
   "role": "HOST"
 }
 ```
-* **Success Response (201 Created):**
+
+- **Success Response (201 Created):**
+
 ```json
 {
   "user": {
@@ -36,19 +41,26 @@ Creates a new user profile on the platform (Default role is `HOST`).
 ```
 
 #### `POST /auth/login`
+
 Authenticates a registered host or administrator.
-* **Request Body:**
+
+- **Request Body:**
+
 ```json
 {
   "email": "host@quiz.com",
   "password": "password123"
 }
 ```
-* **Success Response (200 OK):** Standard JWT tokens payload.
+
+- **Success Response (200 OK):** Standard JWT tokens payload.
 
 #### `POST /auth/google`
+
 Authenticates or registers a user via verified Google OAuth.
-* **Request Body:**
+
+- **Request Body:**
+
 ```json
 {
   "token": "oauth-google-token-credential-string",
@@ -62,9 +74,12 @@ Authenticates or registers a user via verified Google OAuth.
 ### Quizzes & Question Bank Module
 
 #### `POST /quizzes`
+
 Creates a new quiz template with questions and option sets. (Requires `HOST` or `ADMIN` roles).
-* **Headers:** `Authorization: Bearer <accessToken>`
-* **Request Body:**
+
+- **Headers:** `Authorization: Bearer <accessToken>`
+- **Request Body:**
+
 ```json
 {
   "title": "React 19 Core Concepts",
@@ -90,8 +105,11 @@ Creates a new quiz template with questions and option sets. (Requires `HOST` or 
 ```
 
 #### `POST /quizzes/ai-generate`
+
 Generates a quiz using natural language topics.
-* **Request Body:**
+
+- **Request Body:**
+
 ```json
 {
   "topic": "Kubernetes Pod Lifecycle",
@@ -108,15 +126,20 @@ The real-time bidirectional gateway operates on the root socket connection port 
 ### A. Host Events (Emitted by Host Clients)
 
 #### `host_create_room`
+
 Creates a live game lobby for a specific quiz template.
-* **Payload:**
+
+- **Payload:**
+
 ```json
 {
   "quizId": "quiz-uuid-string",
   "hostId": "host-uuid-string"
 }
 ```
-* **Server Response (`room_created`):**
+
+- **Server Response (`room_created`):**
+
 ```json
 {
   "pin": "540912",
@@ -125,15 +148,21 @@ Creates a live game lobby for a specific quiz template.
 ```
 
 #### `host_start_game`
+
 Launches the quiz, transitioning the room state from `LOBBY` into the first question countdown.
-* **Payload:**
+
+- **Payload:**
+
 ```json
 { "pin": "540912" }
 ```
 
 #### `host_next_question`
+
 Advances to the next phase (Show Leaderboard or transition to the next Question slide).
-* **Payload:**
+
+- **Payload:**
+
 ```json
 { "pin": "540912" }
 ```
@@ -143,15 +172,20 @@ Advances to the next phase (Show Leaderboard or transition to the next Question 
 ### B. Participant Events (Emitted by Participant Clients)
 
 #### `player_join`
+
 Attempts to register a nickname into an active room PIN.
-* **Payload:**
+
+- **Payload:**
+
 ```json
 {
   "pin": "540912",
   "name": "QuizMaster99"
 }
 ```
-* **Server Response (`join_success`):**
+
+- **Server Response (`join_success`):**
+
 ```json
 {
   "player": {
@@ -164,8 +198,11 @@ Attempts to register a nickname into an active room PIN.
 ```
 
 #### `submit_answer`
+
 Sends a participant's option selection to the game engine.
-* **Payload:**
+
+- **Payload:**
+
 ```json
 {
   "pin": "540912",
@@ -174,7 +211,9 @@ Sends a participant's option selection to the game engine.
   "optionId": "selected-option-uuid"
 }
 ```
-* **Server Private Response (`answer_acknowledged`):**
+
+- **Server Private Response (`answer_acknowledged`):**
+
 ```json
 {
   "isCorrect": true,

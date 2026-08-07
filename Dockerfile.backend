@@ -1,0 +1,40 @@
+# Multi-Stage Production Dockerfile for NestJS Backend
+# Stage 1: Build Dependencies and Transpile TypeScript
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install build dependencies
+COPY backend/package*.json ./backend/
+COPY backend/prisma ./backend/prisma/
+
+WORKDIR /app/backend
+RUN npm ci
+
+COPY backend/ ./
+RUN npx prisma generate
+RUN npm run build
+RUN npm prune --production
+
+# Stage 2: Production Container
+FROM node:20-alpine AS runner
+
+WORKDIR /app/backend
+
+ENV NODE_ENV=production
+ENV PORT=4000
+
+# Security: Run as non-root node user
+USER node
+
+COPY --chown=node:node --from=builder /app/backend/node_modules ./node_modules
+COPY --chown=node:node --from=builder /app/backend/dist ./dist
+COPY --chown=node:node --from=builder /app/backend/package*.json ./
+COPY --chown=node:node --from=builder /app/backend/prisma ./prisma
+
+EXPOSE 4000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:4000/api/live || exit 1
+
+CMD ["node", "dist/src/main.js"]

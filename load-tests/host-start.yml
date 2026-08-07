@@ -8,7 +8,6 @@ scenarios:
   - engine: socketio
 
     flow:
-
       - connect: {}
 
       - emit:
