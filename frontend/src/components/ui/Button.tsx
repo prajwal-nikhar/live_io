@@ -24,7 +24,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center font-bold transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98]";
+    "inline-flex items-center justify-center font-bold transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed select-none active:scale-[0.98] whitespace-nowrap";
 
   const variants = {
     primary:
@@ -55,15 +55,28 @@ export const Button: React.FC<ButtonProps> = ({
       {...props}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin text-current" />
+        <span className="inline-flex items-center justify-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-current shrink-0" />
+          <span>Processing...</span>
+        </span>
       ) : (
-        <>
-          {leftIcon && <span className="inline-flex shrink-0">{leftIcon}</span>}
-          <span>{children}</span>
-          {rightIcon && (
-            <span className="inline-flex shrink-0">{rightIcon}</span>
+        <span className="inline-flex items-center justify-center gap-2 shrink-0">
+          {leftIcon && (
+            <span className="inline-flex items-center justify-center shrink-0">
+              {leftIcon}
+            </span>
           )}
-        </>
+          {children && (
+            <span className="inline-flex items-center justify-center gap-1.5 shrink-0">
+              {children}
+            </span>
+          )}
+          {rightIcon && (
+            <span className="inline-flex items-center justify-center shrink-0">
+              {rightIcon}
+            </span>
+          )}
+        </span>
       )}
     </button>
   );

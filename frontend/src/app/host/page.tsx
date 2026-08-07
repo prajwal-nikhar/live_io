@@ -556,7 +556,7 @@ export default function HostDashboard() {
             className="flex items-center gap-3 cursor-pointer"
             onClick={() => router.push("/")}
           >
-            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/25">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-cyan-500 rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -574,8 +574,9 @@ export default function HostDashboard() {
               variant="ghost"
               size="sm"
               onClick={() => router.push("/admin/operations")}
+              leftIcon={<Activity className="w-4 h-4 text-emerald-400" />}
             >
-              <Activity className="w-4 h-4 mr-1 text-emerald-400" /> SRE Ops
+              SRE Ops
             </Button>
             <div className="hidden md:block text-right border-l border-slate-800 pl-3">
               <p className="text-sm font-extrabold text-slate-100">
@@ -587,7 +588,7 @@ export default function HostDashboard() {
             </div>
             <button
               onClick={handleLogout}
-              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800"
+              className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800 inline-flex items-center justify-center"
               title="Sign Out"
             >
               <LogOut className="w-5 h-5" />
@@ -600,7 +601,7 @@ export default function HostDashboard() {
         {/* Quick Actions Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-md">
           <div className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-indigo-400" />
+            <Trophy className="w-5 h-5 text-indigo-400 shrink-0" />
             <span className="font-bold text-sm text-slate-200">
               Host Operations Control
             </span>
@@ -610,23 +611,25 @@ export default function HostDashboard() {
               size="sm"
               variant="primary"
               onClick={() => window.scrollTo({ top: 380, behavior: "smooth" })}
+              leftIcon={<Plus className="w-4 h-4" />}
             >
-              <Plus className="w-4 h-4 mr-1" /> + New Quiz
+              New Quiz
             </Button>
             <Button
               size="sm"
               variant="secondary"
               onClick={() => window.scrollTo({ top: 380, behavior: "smooth" })}
+              leftIcon={<FileSpreadsheet className="w-4 h-4 text-pink-400" />}
             >
-              <FileSpreadsheet className="w-4 h-4 mr-1 text-pink-400" /> Import
-              CSV
+              Import CSV
             </Button>
             <Button
               size="sm"
               variant="glowing"
               onClick={() => window.scrollTo({ top: 380, behavior: "smooth" })}
+              leftIcon={<Bot className="w-4 h-4 text-cyan-400" />}
             >
-              <Bot className="w-4 h-4 mr-1 text-cyan-400" /> Generate AI Quiz
+              Generate AI Quiz
             </Button>
           </div>
         </div>
@@ -708,7 +711,7 @@ export default function HostDashboard() {
           >
             <div>
               <div className="flex items-center gap-2">
-                <PlusCircle className="w-5 h-5 text-indigo-400" />
+                <PlusCircle className="w-5 h-5 text-indigo-400 shrink-0" />
                 <h3 className="font-bold text-base text-white">Create Quiz</h3>
               </div>
               <p className="text-xs text-slate-400 mt-1">
@@ -733,8 +736,9 @@ export default function HostDashboard() {
                 className="w-full"
                 isLoading={createLoading}
                 type="submit"
+                leftIcon={<Plus className="w-4 h-4" />}
               >
-                <Plus className="w-4 h-4 mr-1" /> Draft Quiz
+                Draft Quiz
               </Button>
             </form>
           </Card>
@@ -747,7 +751,7 @@ export default function HostDashboard() {
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-pink-400" />
+                  <FileSpreadsheet className="w-5 h-5 text-pink-400 shrink-0" />
                   <h3 className="font-bold text-base text-white">Import CSV</h3>
                 </div>
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-pink-500/10 text-pink-400 border border-pink-500/20">
@@ -769,7 +773,7 @@ export default function HostDashboard() {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current?.click()}
-                className={`p-4 rounded-xl border-2 border-dashed text-center cursor-pointer transition-all ${
+                className={`p-4 rounded-xl border-2 border-dashed text-center cursor-pointer transition-all flex flex-col items-center justify-center ${
                   isDragging
                     ? "border-pink-500 bg-pink-500/10"
                     : "border-slate-800 bg-slate-950/60 hover:border-slate-700 hover:bg-slate-900/60"
@@ -785,7 +789,7 @@ export default function HostDashboard() {
                       handleFileSelect(e.target.files[0]);
                   }}
                 />
-                <UploadCloud className="w-6 h-6 mx-auto text-pink-400 mb-1" />
+                <UploadCloud className="w-6 h-6 text-pink-400 mb-1 shrink-0" />
                 <p className="text-xs font-bold text-slate-200">
                   Drag & Drop CSV or Browse
                 </p>
@@ -804,14 +808,14 @@ export default function HostDashboard() {
               >
                 <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
                   <div className="flex items-center gap-2 truncate">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span className="font-bold text-slate-200 truncate">
                       {selectedFile.name}
                     </span>
                   </div>
                   <button
                     onClick={handleResetImport}
-                    className="text-slate-500 hover:text-slate-300 text-[11px] font-semibold"
+                    className="text-slate-500 hover:text-slate-300 text-[11px] font-semibold shrink-0 ml-2"
                   >
                     Change
                   </button>
@@ -833,8 +837,9 @@ export default function HostDashboard() {
                   variant="primary"
                   className="w-full"
                   onClick={handleConfirmImport}
+                  leftIcon={<UploadCloud className="w-4 h-4" />}
                 >
-                  <UploadCloud className="w-4 h-4 mr-1" /> Import Quiz
+                  Import Quiz
                 </Button>
               </motion.div>
             )}
@@ -868,7 +873,7 @@ export default function HostDashboard() {
                   className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs space-y-2 text-emerald-300"
                 >
                   <div className="flex items-center gap-1.5 font-bold text-sm text-emerald-400">
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="w-5 h-5 shrink-0" />
                     <span>Quiz Imported Successfully</span>
                   </div>
                   <div className="space-y-1 text-slate-200 border-t border-emerald-500/20 pt-2 font-medium">
@@ -896,9 +901,9 @@ export default function HostDashboard() {
                     variant="ghost"
                     className="w-full mt-2 text-xs text-slate-300 hover:text-white"
                     onClick={handleResetImport}
+                    leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
                   >
-                    <RotateCcw className="w-3.5 h-3.5 mr-1" /> Import Another
-                    CSV
+                    Import Another CSV
                   </Button>
                 </motion.div>
               </AnimatePresence>
@@ -912,7 +917,7 @@ export default function HostDashboard() {
                 className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs space-y-2 text-rose-300"
               >
                 <div className="flex items-center gap-1.5 font-bold text-sm text-rose-400">
-                  <AlertCircle className="w-5 h-5" />
+                  <AlertCircle className="w-5 h-5 shrink-0" />
                   <span>Import Failed</span>
                 </div>
                 <p className="text-rose-300">
@@ -938,7 +943,7 @@ export default function HostDashboard() {
             <div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-cyan-400" />
+                  <Bot className="w-5 h-5 text-cyan-400 shrink-0" />
                   <h3 className="font-bold text-base text-white">
                     AI Generator
                   </h3>
@@ -964,8 +969,9 @@ export default function HostDashboard() {
                 className="w-full"
                 isLoading={aiLoading}
                 type="submit"
+                leftIcon={<Bot className="w-4 h-4" />}
               >
-                <Bot className="w-4 h-4 mr-1" /> Generate AI Quiz
+                Generate AI Quiz
               </Button>
             </form>
           </Card>
@@ -977,7 +983,7 @@ export default function HostDashboard() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800/80 pb-4">
             <div>
               <h2 className="font-black text-2xl tracking-tight text-white flex items-center gap-2">
-                <Layers className="w-6 h-6 text-indigo-400" />
+                <Layers className="w-6 h-6 text-indigo-400 shrink-0" />
                 <span>Created Quiz Bank ({processedQuizzes.length})</span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
@@ -1015,7 +1021,7 @@ export default function HostDashboard() {
           {/* Filter Chips */}
           <div className="flex items-center flex-wrap gap-2">
             <span className="text-xs text-slate-500 font-bold mr-1 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" /> Filter:
+              <Filter className="w-3.5 h-3.5 shrink-0" /> Filter:
             </span>
             {[
               { id: "all", label: "All Quizzes" },
@@ -1103,12 +1109,12 @@ export default function HostDashboard() {
 
                         {/* Quiz Attributes & Metadata */}
                         <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-400 border-t border-slate-800/80 pt-3">
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                             <span>~{estDuration} min duration</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <FileText className="w-3.5 h-3.5 text-emerald-400" />
+                          <div className="flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                             <span>{quiz.category || "General"}</span>
                           </div>
                         </div>
@@ -1116,31 +1122,31 @@ export default function HostDashboard() {
 
                       {/* Card Action Controls */}
                       <div className="flex items-center justify-between border-t border-slate-800/80 pt-3">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             onClick={() => router.push(`/host/quiz/${quiz.id}`)}
-                            className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800"
+                            className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800 inline-flex items-center justify-center"
                             title="Edit Quiz Questions"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleExportCsv(quiz)}
-                            className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800"
+                            className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800 inline-flex items-center justify-center"
                             title="Export to CSV"
                           >
                             <Download className="w-4 h-4 text-pink-400" />
                           </button>
                           <button
                             onClick={() => handleDuplicateQuiz(quiz.id)}
-                            className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800"
+                            className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors border border-slate-800 inline-flex items-center justify-center"
                             title="Duplicate Quiz"
                           >
                             <Copy className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteQuiz(quiz.id)}
-                            className="p-2 rounded-lg bg-slate-950 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition-colors border border-slate-800"
+                            className="p-2 rounded-lg bg-slate-950 hover:bg-rose-950 text-slate-400 hover:text-rose-400 transition-colors border border-slate-800 inline-flex items-center justify-center"
                             title="Delete Quiz"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1151,9 +1157,11 @@ export default function HostDashboard() {
                           variant="glowing"
                           size="sm"
                           onClick={() => handleHostLive(quiz.id)}
+                          leftIcon={
+                            <Play className="w-3.5 h-3.5 fill-white shrink-0" />
+                          }
                         >
-                          <Play className="w-3.5 h-3.5 mr-1 fill-white" /> Host
-                          Live
+                          Host Live
                         </Button>
                       </div>
                     </Card>
