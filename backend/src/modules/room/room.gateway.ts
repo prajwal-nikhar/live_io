@@ -94,6 +94,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     try {
+      const transportName = client.conn?.transport?.name || "unknown";
+      const userAgent = client.handshake?.headers["user-agent"] || "unknown";
+      const namespace = client.nsp?.name || "/";
+
       const token =
         client.handshake.auth?.token ||
         client.handshake.headers?.authorization?.replace("Bearer ", "");
@@ -110,11 +114,20 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
         client.data.user = payload;
         this.logger.log(
-          `[Socket Connected] ID: ${client.id} (User: ${payload.email})`,
+          `[Socket Connected] ID: ${client.id} Transport: ${transportName} Nsp: ${namespace} UserAgent: ${userAgent} (User: ${payload.email})`,
         );
       } else {
-        this.logger.log(`[Socket Connected] ID: ${client.id} (Anonymous)`);
+        this.logger.log(
+          `[Socket Connected] ID: ${client.id} Transport: ${transportName} Nsp: ${namespace} UserAgent: ${userAgent} (Anonymous)`,
+        );
       }
+
+      // Track Engine.IO transport upgrades
+      client.conn?.on("upgrade", (transport: any) => {
+        this.logger.log(
+          `[Socket Transport Upgrade] ID: ${client.id} Upgraded to ${transport.name}`,
+        );
+      });
 
       this.metricsService.activeSocketsGauge.inc();
     } catch (err: any) {
@@ -126,7 +139,10 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
-    this.logger.log(`[Socket Disconnected] ID: ${client.id}`);
+    const transportName = client.conn?.transport?.name || "unknown";
+    this.logger.log(
+      `[Socket Disconnected] ID: ${client.id} Transport: ${transportName}`,
+    );
     this.metricsService.activeSocketsGauge.dec();
     this.metricsService.socketDisconnectsTotal.inc({
       reason: "transport_close",

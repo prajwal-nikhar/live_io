@@ -17,7 +17,7 @@
     "next": "^15.0.0",
     "react": "^19.0.0-rc",
     "react-dom": "^19.0.0-rc",
-    "socket.io-client": "^4.7.2",
+    "socket.io-client": "^4.8.1",
     "tailwind-merge": "^2.2.2"
   },
   "devDependencies": {

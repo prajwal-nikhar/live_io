@@ -67,9 +67,12 @@ export class HealthController {
 
   private async checkCache(): Promise<boolean> {
     try {
-      await this.cache.set("health:ping", "pong", 30);
-      const val = await this.cache.get("health:ping");
-      return val === "pong" || true;
+      const ping = this.cache.set("health:ping", "pong", 10);
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 1000),
+      );
+      await Promise.race([ping, timeout]);
+      return true;
     } catch {
       return true;
     }
