@@ -1,52 +1,80 @@
-import { Controller, Get, HttpStatus, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Get } from '@nestjs/common';
+import {
+  HealthCheckService,
+  HealthCheck,
+  PrismaHealthIndicator,
+  MemoryHealthIndicator,
+} from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../cache/cache.service';
 
-@Controller()
+@Controller('api')
 export class HealthController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private health: HealthCheckService,
+    private prismaHealth: PrismaHealthIndicator,
+    private memory: MemoryHealthIndicator,
+    private prisma: PrismaService,
+    private cache: CacheService,
+  ) {}
 
+  /**
+   * Complete health check (/api/health)
+   */
   @Get('health')
-  async checkHealth(@Res() res: Response) {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return res.status(HttpStatus.OK).json({
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        database: 'connected',
-      });
-    } catch (error: any) {
-      return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        database: 'disconnected',
-        error: error.message,
-      });
-    }
+  @HealthCheck()
+  async checkHealth() {
+    return this.health.check([
+      () => this.prismaHealth.pingCheck('database', this.prisma),
+      () => this.memory.checkHeap('memory_heap', 400 * 1024 * 1024), // 400MB Heap limit
+      async () => {
+        const isCacheOk = await this.checkCache();
+        return {
+          cache: {
+            status: isCacheOk ? 'up' : 'down',
+          },
+        };
+      },
+    ]);
   }
 
+  /**
+   * Readiness probe (/api/ready) - Ensures DB and Cache are connected before receiving traffic
+   */
   @Get('ready')
-  async checkReadiness(@Res() res: Response) {
-    try {
-      await this.prisma.$queryRaw`SELECT 1`;
-      return res.status(HttpStatus.OK).json({
-        ready: true,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      return res.status(HttpStatus.SERVICE_UNAVAILABLE).json({
-        ready: false,
-        timestamp: new Date().toISOString(),
-      });
-    }
+  @HealthCheck()
+  async checkReady() {
+    return this.health.check([
+      () => this.prismaHealth.pingCheck('database', this.prisma),
+      async () => {
+        const isCacheOk = await this.checkCache();
+        if (!isCacheOk) {
+          throw new Error('Cache connection check failed');
+        }
+        return { cache: { status: 'up' } };
+      },
+    ]);
   }
 
+  /**
+   * Liveness probe (/api/live) - Fast check to confirm the node process is alive
+   */
   @Get('live')
-  checkLiveness(@Res() res: Response) {
-    return res.status(HttpStatus.OK).json({
-      live: true,
+  getLiveness() {
+    return {
+      status: 'up',
       timestamp: new Date().toISOString(),
-    });
+      uptime: process.uptime(),
+    };
+  }
+
+  private async checkCache(): Promise<boolean> {
+    try {
+      await this.cache.set('health:ping', 'pong', 10);
+      const val = await this.cache.get('health:ping');
+      return val === 'pong';
+    } catch {
+      return false;
+    }
   }
 }

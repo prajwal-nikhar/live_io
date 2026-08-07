@@ -1,0 +1,38 @@
+import { PipeTransform, Injectable, ArgumentMetadata } from '@nestjs/common';
+import { validate } from 'class-validator';
+import { plainToInstance } from 'class-transformer';
+
+@Injectable()
+export class WsValidationPipe implements PipeTransform<any> {
+  async transform(value: any, { metatype }: ArgumentMetadata) {
+    if (!metatype || !this.toValidate(metatype)) {
+      return value;
+    }
+
+    let payload = value;
+    if (typeof value === 'string') {
+      try {
+        payload = JSON.parse(value);
+      } catch {
+        // Leave as is if parsing fails
+      }
+    }
+
+    const object = plainToInstance(metatype, payload);
+    const errors = await validate(object);
+
+    if (errors.length > 0) {
+      const errorMessages = errors
+        .map((err) => Object.values(err.constraints || {}).join(', '))
+        .join('; ');
+      throw new Error(`Validation failed: ${errorMessages}`);
+    }
+
+    return object;
+  }
+
+  private toValidate(metatype: Function): boolean {
+    const types: Function[] = [String, Boolean, Number, Array, Object];
+    return !types.includes(metatype);
+  }
+}

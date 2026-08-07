@@ -4,7 +4,7 @@
       "vusers.created": 2000,
       "vusers.created_by_name.Full Quiz Lifecycle": 2000,
       "vusers.completed": 2000,
-      "vusers.answers_submitted": 2000,
+      "vusers.answers_submitted": 1999,
       "vusers.failed": 0
     },
     "rates": {
@@ -12,8 +12,8 @@
       "answer_submission_success_rate": "100.0%",
       "reconnect_recovery_success_rate": "100.0%"
     },
-    "firstCounterAt": 1786075761124,
-    "lastCounterAt": 1786075881124,
+    "firstCounterAt": 1786076559487,
+    "lastCounterAt": 1786076679487,
     "stages": [
       {
         "stage": "100 Concurrent Players Lifecycle",
@@ -25,7 +25,7 @@
         "disconnectCount": 10,
         "quizFinishedCount": 90,
         "duplicateBlocked": true,
-        "timeSec": 26.2,
+        "timeSec": 27.6,
         "success": true
       },
       {
@@ -38,7 +38,7 @@
         "disconnectCount": 45,
         "quizFinishedCount": 255,
         "duplicateBlocked": true,
-        "timeSec": 32.7,
+        "timeSec": 33,
         "success": true
       },
       {
@@ -51,7 +51,7 @@
         "disconnectCount": 120,
         "quizFinishedCount": 480,
         "duplicateBlocked": true,
-        "timeSec": 52,
+        "timeSec": 53.8,
         "success": true
       },
       {
@@ -59,12 +59,12 @@
         "count": 1000,
         "connected": 1000,
         "joined": 1000,
-        "answersSubmitted": 1000,
+        "answersSubmitted": 999,
         "reconnectedCount": 250,
         "disconnectCount": 250,
-        "quizFinishedCount": 359,
+        "quizFinishedCount": 612,
         "duplicateBlocked": true,
-        "timeSec": 96.9,
+        "timeSec": 89,
         "success": true
       }
     ]
