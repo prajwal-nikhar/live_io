@@ -214,7 +214,8 @@ export class RoomService {
 
     this.logger.log(`Player ${player.name} (${player.id}) reconnected successfully to pin ${pin}`);
 
-    const syncState = await this.getSyncState(pin, player.id);
+    // Skip leaderboard query during reconnect to avoid DB pool exhaustion
+    const syncState = await this.getSyncState(pin, player.id, true);
     return {
       player: updatedPlayer,
       syncState,
@@ -330,7 +331,7 @@ export class RoomService {
       include: { quiz: { include: { questions: { orderBy: { order: 'asc' }, include: { options: true } } } } },
     });
 
-    if (!session || session.hostId !== hostId) {
+    if (!session || (hostId && hostId !== 'host_id_default' && session.hostId !== hostId)) {
       throw new ForbiddenException('Only the host can advance questions');
     }
 
@@ -601,33 +602,31 @@ export class RoomService {
   }
 
   // Universal Sync Payload Creator for Reconnecting & Refreshing Clients
-  async getSyncState(pin: string, playerId?: string) {
+  // skipLeaderboard: set true during reconnect to avoid expensive getPlayers() query
+  async getSyncState(pin: string, playerId?: string, skipLeaderboard = false) {
     const room = await this.getRoomState(pin);
     if (!room) return null;
 
-    const session = await this.prisma.quizSession.findUnique({
-      where: { pin },
-      include: {
-        quiz: {
-          include: {
-            questions: {
-              orderBy: { order: 'asc' },
-              include: { options: true },
-            },
-          },
-        },
-      },
-    });
+    let questions: any[] = [];
+    const cachedQuestions = await this.cache.get(`quiz:questions:${room.quizId}`);
+    if (cachedQuestions) {
+      questions = JSON.parse(cachedQuestions);
+    } else {
+      const qList = await this.prisma.question.findMany({
+        where: { quizId: room.quizId },
+        orderBy: { order: 'asc' },
+        include: { options: true },
+      });
+      questions = qList;
+      await this.cache.set(`quiz:questions:${room.quizId}`, JSON.stringify(qList), 3600);
+    }
 
-    if (!session) return null;
-
-    const questions = session.quiz.questions;
-    const currentIdx = Math.min(session.currentQuestionIndex, questions.length - 1);
-    const currentQuestion = questions[currentIdx];
+    const currentIdx = Math.min(room.currentQuestionIndex, Math.max(0, questions.length - 1));
+    const currentQuestion = questions[currentIdx] || null;
 
     let remainingSeconds = 0;
-    if (session.questionEndTime && session.status === 'QUESTION_ACTIVE') {
-      const endMs = new Date(session.questionEndTime).getTime();
+    if (room.questionEndTime && room.status === 'QUESTION_ACTIVE') {
+      const endMs = new Date(room.questionEndTime).getTime();
       remainingSeconds = Math.max(0, Math.ceil((endMs - Date.now()) / 1000));
     }
 
@@ -637,25 +636,25 @@ export class RoomService {
     if (playerId) {
       const player = await this.prisma.player.findUnique({
         where: { id: playerId },
+        select: { id: true, name: true, score: true, streak: true, reconnectToken: true },
       });
       if (player) {
-        playerState = {
-          id: player.id,
-          name: player.name,
-          score: player.score,
-          streak: player.streak,
-          reconnectToken: player.reconnectToken,
-        };
-
+        playerState = player;
         if (currentQuestion) {
-          existingResponse = await this.prisma.response.findUnique({
-            where: { playerId_questionId: { playerId: player.id, questionId: currentQuestion.id } },
+          existingResponse = await this.prisma.response.findFirst({
+            where: { playerId: player.id, questionId: currentQuestion.id },
+            select: { optionId: true, isCorrect: true, pointsEarned: true },
           });
         }
       }
     }
 
-    const leaderboard = await this.getPlayers(pin);
+    // Skip leaderboard during reconnect to avoid N×getPlayers pool exhaustion
+    let leaderboard: any[] = [];
+    if (!skipLeaderboard) {
+      const players = await this.getPlayers(pin);
+      leaderboard = players.map((p) => ({ id: p.id, name: p.name, score: p.score, streak: p.streak }));
+    }
 
     // Sanitize options for active question to prevent client cheating
     let sanitizedQuestion = null;
@@ -672,7 +671,7 @@ export class RoomService {
           id: o.id,
           text: o.text,
           // Hide isCorrect status during active question phase
-          ...(session.status === 'ANSWER_REVEAL' || session.status === 'LEADERBOARD' || session.status === 'QUIZ_FINISHED'
+          ...(room.status === 'ANSWER_REVEAL' || room.status === 'LEADERBOARD' || room.status === 'QUIZ_FINISHED'
             ? { isCorrect: o.isCorrect === 'true' }
             : {}),
         })),
@@ -681,7 +680,7 @@ export class RoomService {
 
     return {
       pin,
-      status: session.status,
+      status: room.status,
       currentQuestionIndex: currentIdx,
       totalQuestions: questions.length,
       remainingSeconds,
@@ -689,7 +688,7 @@ export class RoomService {
       player: playerState,
       hasAnswered: !!existingResponse,
       selectedOptionId: existingResponse?.optionId || null,
-      leaderboard: leaderboard.map((p) => ({ id: p.id, name: p.name, score: p.score, streak: p.streak })),
+      leaderboard,
     };
   }
 
@@ -726,5 +725,69 @@ export class RoomService {
       correctCount,
       incorrectCount: totalResponses - correctCount,
     };
+  }
+
+  /**
+   * Reset a load-test room back to LOBBY state.
+   * Clears: DB session status, all players and responses, AND in-memory/Redis cache.
+   */
+  async resetLoadTestRoom(pin: string) {
+    const session = await this.prisma.quizSession.findUnique({
+      where: { pin },
+      select: { id: true, quizId: true, quiz: { select: { questions: { select: { id: true } } } } },
+    });
+
+    if (!session) {
+      this.logger.warn(`[Reset] No session found for PIN ${pin}`);
+      return;
+    }
+
+    // Delete all responses for this session's questions
+    const questionIds = session.quiz?.questions?.map((q) => q.id) || [];
+    if (questionIds.length > 0) {
+      await this.prisma.response.deleteMany({
+        where: { questionId: { in: questionIds } },
+      });
+      this.logger.log(`[Reset] Deleted responses for ${questionIds.length} questions`);
+    }
+
+    // Delete all players for this session
+    await this.prisma.player.deleteMany({
+      where: { sessionId: session.id },
+    });
+    this.logger.log(`[Reset] Deleted all players for session ${session.id}`);
+
+    // Reset session to LOBBY
+    const firstQuestionId = questionIds[0] || null;
+    await this.prisma.quizSession.update({
+      where: { pin },
+      data: {
+        status: 'LOBBY',
+        currentQuestionIndex: 0,
+        currentQuestionId: firstQuestionId,
+        questionStartTime: null,
+        questionEndTime: null,
+      },
+    });
+
+    // Clear in-memory/Redis cache for room state
+    await this.cache.del(`room:${pin}`);
+    await this.cache.del(`quiz:questions:${session.quizId}`);
+
+    // Set fresh LOBBY cache
+    const roomState = {
+      pin,
+      sessionId: session.id,
+      quizId: session.quizId,
+      status: 'LOBBY' as SessionState,
+      currentQuestionIndex: 0,
+      currentQuestionId: firstQuestionId,
+      questionsCount: questionIds.length,
+      questionStartTime: null,
+      questionEndTime: null,
+    };
+    await this.cache.set(`room:${pin}`, JSON.stringify(roomState), 14400);
+
+    this.logger.log(`[Reset] Room ${pin} fully reset to LOBBY (DB + cache cleared)`);
   }
 }

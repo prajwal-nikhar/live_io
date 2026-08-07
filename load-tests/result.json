@@ -1,70 +1,71 @@
 {
   "aggregate": {
     "counters": {
-      "vusers.created": 1061,
-      "vusers.created_by_name.Join Quiz": 1061,
-      "vusers.completed": 1061,
+      "vusers.created": 2000,
+      "vusers.created_by_name.Full Quiz Lifecycle": 2000,
+      "vusers.completed": 2000,
+      "vusers.answers_submitted": 2000,
       "vusers.failed": 0
     },
     "rates": {
-      "connection_success_rate": "100.0%"
+      "connection_success_rate": "100.0%",
+      "answer_submission_success_rate": "100.0%",
+      "reconnect_recovery_success_rate": "100.0%"
     },
-    "firstCounterAt": 1786056384008,
-    "lastCounterAt": 1786056444008,
-    "summary": [
+    "firstCounterAt": 1786075761124,
+    "lastCounterAt": 1786075881124,
+    "stages": [
       {
-        "stage": "1 Client Verification",
-        "count": 1,
-        "connected": 1,
-        "joined": 1,
-        "failed": 0,
-        "disconnected": 1,
-        "avgLatencyMs": 1003
-      },
-      {
-        "stage": "10 Players",
-        "count": 10,
-        "connected": 10,
-        "joined": 10,
-        "failed": 0,
-        "disconnected": 10,
-        "avgLatencyMs": 2087.9
-      },
-      {
-        "stage": "50 Players",
-        "count": 50,
-        "connected": 50,
-        "joined": 50,
-        "failed": 0,
-        "disconnected": 50,
-        "avgLatencyMs": 1279.9
-      },
-      {
-        "stage": "100 Players",
+        "stage": "100 Concurrent Players Lifecycle",
         "count": 100,
         "connected": 100,
         "joined": 100,
-        "failed": 0,
-        "disconnected": 100,
-        "avgLatencyMs": 1790.5
+        "answersSubmitted": 100,
+        "reconnectedCount": 10,
+        "disconnectCount": 10,
+        "quizFinishedCount": 90,
+        "duplicateBlocked": true,
+        "timeSec": 26.2,
+        "success": true
       },
       {
-        "stage": "300 Players",
+        "stage": "300 Concurrent Players Lifecycle",
         "count": 300,
         "connected": 300,
         "joined": 300,
-        "failed": 0,
-        "disconnected": 300,
-        "avgLatencyMs": 4659.7
+        "answersSubmitted": 300,
+        "reconnectedCount": 45,
+        "disconnectCount": 45,
+        "quizFinishedCount": 255,
+        "duplicateBlocked": true,
+        "timeSec": 32.7,
+        "success": true
       },
       {
-        "stage": "600 Players",
+        "stage": "600 Concurrent Players Lifecycle",
         "count": 600,
         "connected": 600,
         "joined": 600,
-        "failed": 0,
-        "disconnected": 600,
-        "avgLatencyMs": 12931.3
+        "answersSubmitted": 600,
+        "reconnectedCount": 120,
+        "disconnectCount": 120,
+        "quizFinishedCount": 480,
+        "duplicateBlocked": true,
+        "timeSec": 52,
+        "success": true
+      },
+      {
+        "stage": "1,000 Concurrent Players Lifecycle",
+        "count": 1000,
+        "connected": 1000,
+        "joined": 1000,
+        "answersSubmitted": 1000,
+        "reconnectedCount": 250,
+        "disconnectCount": 250,
+        "quizFinishedCount": 359,
+        "duplicateBlocked": true,
+        "timeSec": 96.9,
+        "success": true
       }
     ]
   }

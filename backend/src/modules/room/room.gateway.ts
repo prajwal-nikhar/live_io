@@ -219,8 +219,9 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('player:reconnected', responsePayload);
       client.emit('session:sync', syncState);
 
-      const players = await this.roomService.getPlayers(pin);
-      this.server.to(`room:${pin}`).emit('lobby_update', players);
+      // Use debounced lobby update instead of immediate getPlayers
+      // This avoids N×getPlayers calls when many players reconnect simultaneously
+      this.scheduleLobbyUpdate(pin);
 
       this.logger.log(`[Reconnect Success] Player '${player.name}' restored for PIN ${pin}`);
       return { success: true, data: responsePayload };
