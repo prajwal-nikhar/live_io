@@ -7,6 +7,7 @@ import {
 } from '@nestjs/terminus';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../cache/cache.service';
+import { RoomGateway } from '../room/room.gateway';
 
 @Controller('api')
 export class HealthController {
@@ -16,10 +17,11 @@ export class HealthController {
     private memory: MemoryHealthIndicator,
     private prisma: PrismaService,
     private cache: CacheService,
+    private roomGateway: RoomGateway,
   ) {}
 
   /**
-   * Complete health check (/api/health)
+   * Complete health check (/api/health) - High level health summary
    */
   @Get('health')
   @HealthCheck()
@@ -29,17 +31,17 @@ export class HealthController {
       () => this.memory.checkHeap('memory_heap', 400 * 1024 * 1024), // 400MB Heap limit
       async () => {
         const isCacheOk = await this.checkCache();
-        return {
-          cache: {
-            status: isCacheOk ? 'up' : 'down',
-          },
-        };
+        return { cache: { status: isCacheOk ? 'up' : 'down' } };
+      },
+      async () => {
+        const isGatewayOk = !!this.roomGateway?.server;
+        return { socketGateway: { status: isGatewayOk ? 'up' : 'down' } };
       },
     ]);
   }
 
   /**
-   * Readiness probe (/api/ready) - Ensures DB and Cache are connected before receiving traffic
+   * Readiness probe (/api/ready) - Verifies Database, Redis/Cache, and Socket Gateway before routing traffic
    */
   @Get('ready')
   @HealthCheck()
@@ -53,11 +55,18 @@ export class HealthController {
         }
         return { cache: { status: 'up' } };
       },
+      async () => {
+        const isGatewayOk = !!this.roomGateway?.server;
+        if (!isGatewayOk) {
+          throw new Error('Socket Gateway initialization check failed');
+        }
+        return { socketGateway: { status: 'up' } };
+      },
     ]);
   }
 
   /**
-   * Liveness probe (/api/live) - Fast check to confirm the node process is alive
+   * Liveness probe (/api/live) - Fast process liveness check (MUST NOT depend on DB or Redis)
    */
   @Get('live')
   getLiveness() {

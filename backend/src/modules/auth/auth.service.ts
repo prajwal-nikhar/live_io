@@ -193,21 +193,28 @@ export class AuthService {
       name: user.name,
     };
 
+    const jwtSecret = process.env.JWT_SECRET;
+    const refreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret;
+
+    if (!jwtSecret && process.env.NODE_ENV === 'production') {
+      throw new Error('CRITICAL: JWT_SECRET environment variable is missing');
+    }
+
+    const effectiveJwtSecret = jwtSecret || 'dev-fallback-secret-key-change-in-prod';
+    const effectiveRefreshSecret = refreshSecret || effectiveJwtSecret;
+
     const accessTokenExpiresIn = process.env.JWT_EXPIRATION || '15m';
     const refreshTokenExpiresIn = process.env.JWT_REFRESH_EXPIRATION || '7d';
 
-    const jwtSecret = process.env.JWT_SECRET || 'cognition-super-secret-jwt-key-2026';
-    const refreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret;
-
     const accessToken = this.jwtService.sign(payload, {
-      secret: jwtSecret,
+      secret: effectiveJwtSecret,
       expiresIn: accessTokenExpiresIn,
     });
 
     const refreshToken = this.jwtService.sign(
       { sub: user.id },
       {
-        secret: refreshSecret,
+        secret: effectiveRefreshSecret,
         expiresIn: refreshTokenExpiresIn,
       },
     );

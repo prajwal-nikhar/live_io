@@ -9,6 +9,6 @@ import { AuthModule } from '../auth/auth.module';
   imports: [QuizModule, AuthModule],
   controllers: [RoomController],
   providers: [RoomGateway, RoomService],
-  exports: [RoomService],
+  exports: [RoomService, RoomGateway],
 })
 export class RoomModule {}

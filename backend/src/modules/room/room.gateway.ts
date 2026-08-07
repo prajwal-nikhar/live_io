@@ -86,8 +86,12 @@ export class RoomGateway implements OnGatewayConnection, OnGatewayDisconnect {
         client.handshake.headers?.authorization?.replace('Bearer ', '');
 
       if (token) {
+        const jwtSecret = process.env.JWT_SECRET;
+        if (!jwtSecret && process.env.NODE_ENV === 'production') {
+          throw new Error('CRITICAL: JWT_SECRET environment variable is missing');
+        }
         const payload = this.jwtService.verify(token, {
-          secret: process.env.JWT_SECRET || 'cognition-super-secret-jwt-key-2026',
+          secret: jwtSecret || 'dev-fallback-secret-key-change-in-prod',
         });
         client.data.user = payload;
         this.logger.log(`[Socket Connected] ID: ${client.id} (User: ${payload.email})`);

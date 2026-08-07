@@ -32,6 +32,7 @@ describe('RoomService', () => {
     },
     question: {
       findUnique: jest.fn(),
+      findMany: jest.fn().mockResolvedValue([{ id: 'q-1', text: 'Q1', options: [] }]),
     },
   };
 

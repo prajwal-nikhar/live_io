@@ -14,12 +14,20 @@ export class WsValidationPipe implements PipeTransform<any> {
       try {
         payload = JSON.parse(value);
       } catch {
-        // Leave as is if parsing fails
+        throw new Error('Validation failed: Malformed JSON payload');
       }
     }
 
+    if (typeof payload !== 'object' || payload === null) {
+      throw new Error('Validation failed: Payload must be a non-null object');
+    }
+
     const object = plainToInstance(metatype, payload);
-    const errors = await validate(object);
+    const errors = await validate(object, {
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      forbidUnknownValues: true,
+    });
 
     if (errors.length > 0) {
       const errorMessages = errors

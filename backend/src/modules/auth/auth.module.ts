@@ -9,10 +9,16 @@ import { JwtStrategy } from './jwt.strategy';
   imports: [
     PassportModule,
     JwtModule.registerAsync({
-      useFactory: () => ({
-        secret: process.env.JWT_SECRET || 'cognition-super-secret-jwt-key-2026',
-        signOptions: { expiresIn: process.env.JWT_EXPIRATION || '15m' },
-      }),
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret && process.env.NODE_ENV === 'production') {
+          throw new Error('CRITICAL: JWT_SECRET environment variable is missing');
+        }
+        return {
+          secret: secret || 'dev-fallback-secret-key-change-in-prod',
+          signOptions: { expiresIn: process.env.JWT_EXPIRATION || '15m' },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
